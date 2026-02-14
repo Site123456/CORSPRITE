@@ -8,6 +8,7 @@
 ### 🚧 Alpha Status  
 CORSPRITE is currently in **active alpha testing**.  
 Uploads and public builds will be released once stability exceeds **90% success rate**.
+Trained data will not be hosted!
 
 ### 🎯 Planned Beta Release  
 **May 1st, 2026**
