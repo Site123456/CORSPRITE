@@ -1,9 +1,18 @@
 <p align="center">
   <img src="/logo/logo_banner_beta.png" alt="CORSPRITE Logo" width="480" />
 </p>
+
+<h1 align="center">CORSPRITE</h1>
+
 <p align="center">
-  CORSPRITE - an interactive assistant like you've never experienced before.
+  <strong>An interactive assistant engineered to feel native, alive, and unmistakably yours.</strong>
 </p>
 
 ---
-Alpha test still in run uploads will only come after success rate > 90%.
+
+### 🚧 Alpha Status  
+CORSPRITE is currently in **active alpha testing**.  
+Uploads and public builds will be released once stability exceeds **90% success rate**.
+
+### 🎯 Planned Beta Release  
+**May 1st, 2026**
