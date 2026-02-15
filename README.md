@@ -9,7 +9,7 @@
 CORSPRITE is currently in **active alpha testing**.  
 Uploads and public builds will be released once stability exceeds **90% success rate**.
 Trained data will not be hosted!
-During BETA, Docs will be hosted in: https://corsprite-docs.vercel.app/
+During BETA, Docs will be hosted in: [https://corsprite-docs.vercel.app/](https://corsprite-docs.vercel.app/)
 
 ### 🎯 Planned Beta Release  
 **May 1st, 2026**
