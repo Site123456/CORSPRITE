@@ -6,7 +6,7 @@
 ---
 ### 🚧 Alpha Status
 **Current Phase:** Active Alpha Testing & Security fixes
-For more details see:  [https://corsprite-docs.vercel.app/](https://corsprite-docs.vercel.app/)
+For more details see:  [Docs](https://corsprite-docs.vercel.app/)
 
 CORSPRITE is currently undergoing intensive development and stabilization, with ongoing fixes to C++, Python & Rust communication.  
 
