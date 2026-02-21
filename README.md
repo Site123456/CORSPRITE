@@ -21,3 +21,5 @@ Documentation will be available during beta at:
 [https://corsprite-docs.vercel.app/](https://corsprite-docs.vercel.app/)
 [https://www.youtube.com/@CORSPRITE](https://www.youtube.com/@CORSPRITE)
 
+---
+Note: Logo, Name & Domain is not fixed for now it's CORSPRITE and will change in beta release directly.
