@@ -6,6 +6,7 @@
 ---
 ### 🚧 Alpha Status
 **Current Phase:** Active Alpha Testing & Security fixes
+For more details see:  [https://corsprite-docs.vercel.app/](https://corsprite-docs.vercel.app/)
 
 CORSPRITE is currently undergoing intensive development and stabilization, with ongoing fixes to C++, Python & Rust communication.  
 
@@ -16,10 +17,7 @@ Public builds and upload features will be released once overall system stability
 ---
 
 ### 📘 Documentation (During Beta Phase)
-Documentation will be available during beta at:  
+Documentation will be available during beta at:
 [https://corsprite-docs.vercel.app/](https://corsprite-docs.vercel.app/)
+[https://www.youtube.com/@CORSPRITE](https://www.youtube.com/@CORSPRITE)
 
----
-
-### 🎯 Planned Beta Release
-**July 1, 2026**
