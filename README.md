@@ -31,61 +31,61 @@ The following Unicode zones are fully supported and provide broad multilingual c
 #### **Uppercase English**
 <p align="center">
   <img src="/fonts/supported_fonts_0.jpeg" width="420" />
-  <img src="/fonts/bw_supported_fonts_00.jpeg" width="420" />
+  <img src="/fonts/bw_supported_fonts_0.jpeg" width="420" />
 </p>
 
 #### **Lowercase English**
 <p align="center">
-  <img src="/fonts/supported_fonts_01.jpeg" width="420" />
-  <img src="/fonts/bw_supported_fonts_01.jpeg" width="420" />
+  <img src="/fonts/supported_fonts_1.jpeg" width="420" />
+  <img src="/fonts/bw_supported_fonts_1.jpeg" width="420" />
 </p>
 
 #### **Digits**
 <p align="center">
-  <img src="/fonts/supported_fonts_02.jpeg" width="420" />
-  <img src="/fonts/bw_supported_fonts_02.jpeg" width="420" />
+  <img src="/fonts/supported_fonts_2.jpeg" width="420" />
+  <img src="/fonts/bw_supported_fonts_2.jpeg" width="420" />
 </p>
 
 #### **Basic Punctuation**
 <p align="center">
-  <img src="/fonts/supported_fonts_03.jpeg" width="420" />
-  <img src="/fonts/bw_supported_fonts_03.jpeg" width="420" />
+  <img src="/fonts/supported_fonts_3.jpeg" width="420" />
+  <img src="/fonts/bw_supported_fonts_3.jpeg" width="420" />
 </p>
 
 #### **More Punctuation**
 <p align="center">
-  <img src="/fonts/supported_fonts_04.jpeg" width="420" />
-  <img src="/fonts/bw_supported_fonts_04.jpeg" width="420" />
+  <img src="/fonts/supported_fonts_4.jpeg" width="420" />
+  <img src="/fonts/bw_supported_fonts_4.jpeg" width="420" />
 </p>
 
 #### **Quotes & Dashes**
 <p align="center">
-  <img src="/fonts/supported_fonts_05.jpeg" width="420" />
-  <img src="/fonts/bw_supported_fonts_05.jpeg" width="420" />
+  <img src="/fonts/supported_fonts_5.jpeg" width="420" />
+  <img src="/fonts/bw_supported_fonts_5.jpeg" width="420" />
 </p>
 
 #### **Ellipsis**
 <p align="center">
-  <img src="/fonts/supported_fonts_06.jpeg" width="420" />
-  <img src="/fonts/bw_supported_fonts_06.jpeg" width="420" />
+  <img src="/fonts/supported_fonts_6.jpeg" width="420" />
+  <img src="/fonts/bw_supported_fonts_6.jpeg" width="420" />
 </p>
 
 #### **Latin Extended A**
 <p align="center">
-  <img src="/fonts/supported_fonts_07.jpeg" width="420" />
-  <img src="/fonts/bw_supported_fonts_07.jpeg" width="420" />
+  <img src="/fonts/supported_fonts_7.jpeg" width="420" />
+  <img src="/fonts/bw_supported_fonts_7.jpeg" width="420" />
 </p>
 
 #### **Latin Extended B**
 <p align="center">
-  <img src="/fonts/supported_fonts_08.jpeg" width="420" />
-  <img src="/fonts/bw_supported_fonts_08.jpeg" width="420" />
+  <img src="/fonts/supported_fonts_8.jpeg" width="420" />
+  <img src="/fonts/bw_supported_fonts_8.jpeg" width="420" />
 </p>
 
 #### **IPA Extensions**
 <p align="center">
-  <img src="/fonts/supported_fonts_09.jpeg" width="420" />
-  <img src="/fonts/bw_supported_fonts_09.jpeg" width="420" />
+  <img src="/fonts/supported_fonts_9.jpeg" width="420" />
+  <img src="/fonts/bw_supported_fonts_9.jpeg" width="420" />
 </p>
 
 #### **Greek**
