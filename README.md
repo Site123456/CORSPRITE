@@ -22,4 +22,191 @@ Documentation will be available during beta at:
 [https://www.youtube.com/@CORSPRITE](https://www.youtube.com/@CORSPRITE)
 
 ---
+### Supported Font Coverage
+
+All CORSPRITE training fonts are rendered through the default Windows font and the [IMGUI](https://github.com/ocornut/imgui) framework.
+These canvases show the exact glyphs supported by the current CORSPRITE font stack.
+The following Unicode zones are fully supported and provide broad multilingual coverage with consistent rendering:
+
+#### **Uppercase English**
+<p align="center">
+  <img src="/fonts/supported_fonts_00.jpeg" width="420" />
+  <img src="/fonts/bw_supported_fonts_00.jpeg" width="420" />
+</p>
+
+#### **Lowercase English**
+<p align="center">
+  <img src="/fonts/supported_fonts_01.jpeg" width="420" />
+  <img src="/fonts/bw_supported_fonts_01.jpeg" width="420" />
+</p>
+
+#### **Digits**
+<p align="center">
+  <img src="/fonts/supported_fonts_02.jpeg" width="420" />
+  <img src="/fonts/bw_supported_fonts_02.jpeg" width="420" />
+</p>
+
+#### **Basic Punctuation**
+<p align="center">
+  <img src="/fonts/supported_fonts_03.jpeg" width="420" />
+  <img src="/fonts/bw_supported_fonts_03.jpeg" width="420" />
+</p>
+
+#### **More Punctuation**
+<p align="center">
+  <img src="/fonts/supported_fonts_04.jpeg" width="420" />
+  <img src="/fonts/bw_supported_fonts_04.jpeg" width="420" />
+</p>
+
+#### **Quotes & Dashes**
+<p align="center">
+  <img src="/fonts/supported_fonts_05.jpeg" width="420" />
+  <img src="/fonts/bw_supported_fonts_05.jpeg" width="420" />
+</p>
+
+#### **Ellipsis**
+<p align="center">
+  <img src="/fonts/supported_fonts_06.jpeg" width="420" />
+  <img src="/fonts/bw_supported_fonts_06.jpeg" width="420" />
+</p>
+
+#### **Latin Extended A**
+<p align="center">
+  <img src="/fonts/supported_fonts_07.jpeg" width="420" />
+  <img src="/fonts/bw_supported_fonts_07.jpeg" width="420" />
+</p>
+
+#### **Latin Extended B**
+<p align="center">
+  <img src="/fonts/supported_fonts_08.jpeg" width="420" />
+  <img src="/fonts/bw_supported_fonts_08.jpeg" width="420" />
+</p>
+
+#### **IPA Extensions**
+<p align="center">
+  <img src="/fonts/supported_fonts_09.jpeg" width="420" />
+  <img src="/fonts/bw_supported_fonts_09.jpeg" width="420" />
+</p>
+
+#### **Greek**
+<p align="center">
+  <img src="/fonts/supported_fonts_10.jpeg" width="420" />
+  <img src="/fonts/bw_supported_fonts_10.jpeg" width="420" />
+</p>
+
+#### **Cyrillic**
+<p align="center">
+  <img src="/fonts/supported_fonts_11.jpeg" width="420" />
+  <img src="/fonts/bw_supported_fonts_11.jpeg" width="420" />
+</p>
+
+#### **Math Operators**
+<p align="center">
+  <img src="/fonts/supported_fonts_12.jpeg" width="420" />
+  <img src="/fonts/bw_supported_fonts_12.jpeg" width="420" />
+</p>
+
+#### **Supplemental Math**
+<p align="center">
+  <img src="/fonts/supported_fonts_13.jpeg" width="420" />
+  <img src="/fonts/bw_supported_fonts_13.jpeg" width="420" />
+</p>
+
+#### **Arrows**
+<p align="center">
+  <img src="/fonts/supported_fonts_14.jpeg" width="420" />
+  <img src="/fonts/bw_supported_fonts_14.jpeg" width="420" />
+</p>
+
+#### **Supplemental Arrows**
+<p align="center">
+  <img src="/fonts/supported_fonts_15.jpeg" width="420" />
+  <img src="/fonts/bw_supported_fonts_15.jpeg" width="420" />
+</p>
+
+#### **Currency Symbols**
+<p align="center">
+  <img src="/fonts/supported_fonts_16.jpeg" width="420" />
+  <img src="/fonts/bw_supported_fonts_16.jpeg" width="420" />
+</p>
+
+#### **Misc Symbols**
+<p align="center">
+  <img src="/fonts/supported_fonts_17.jpeg" width="420" />
+  <img src="/fonts/bw_supported_fonts_17.jpeg" width="420" />
+</p>
+
+#### **Geometric Shapes**
+<p align="center">
+  <img src="/fonts/supported_fonts_18.jpeg" width="420" />
+  <img src="/fonts/bw_supported_fonts_18.jpeg" width="420" />
+</p>
+
+#### **Dingbats**
+<p align="center">
+  <img src="/fonts/supported_fonts_19.jpeg" width="420" />
+  <img src="/fonts/bw_supported_fonts_19.jpeg" width="420" />
+</p>
+
+#### **Box Drawing**
+<p align="center">
+  <img src="/fonts/supported_fonts_20.jpeg" width="420" />
+  <img src="/fonts/bw_supported_fonts_20.jpeg" width="420" />
+</p>
+
+#### **Block Elements**
+<p align="center">
+  <img src="/fonts/supported_fonts_21.jpeg" width="420" />
+  <img src="/fonts/bw_supported_fonts_21.jpeg" width="420" />
+</p>
+
+#### **Braille Patterns**
+<p align="center">
+  <img src="/fonts/supported_fonts_22.jpeg" width="420" />
+  <img src="/fonts/bw_supported_fonts_22.jpeg" width="420" />
+</p>
+
+#### **Hiragana**
+<p align="center">
+  <img src="/fonts/supported_fonts_23.jpeg" width="420" />
+  <img src="/fonts/bw_supported_fonts_23.jpeg" width="420" />
+</p>
+
+#### **Katakana**
+<p align="center">
+  <img src="/fonts/supported_fonts_24.jpeg" width="420" />
+  <img src="/fonts/bw_supported_fonts_24.jpeg" width="420" />
+</p>
+
+#### **Hangul Syllables**
+<p align="center">
+  <img src="/fonts/supported_fonts_25.jpeg" width="420" />
+  <img src="/fonts/bw_supported_fonts_25.jpeg" width="420" />
+</p>
+
+### **CJK Unified Ideographs**
+<p align="center">
+  <img src="/fonts/supported_fonts_26.jpeg" width="420" />
+  <img src="/fonts/bw_supported_fonts_26.jpeg" width="420" />
+</p>
+
+#### **Emoji Faces**
+<p align="center">
+  <img src="/fonts/supported_fonts_27.jpeg" width="420" />
+  <img src="/fonts/bw_supported_fonts_27.jpeg" width="420" />
+</p>
+
+#### **Emoji Misc**
+<p align="center">
+  <img src="/fonts/supported_fonts_28.jpeg" width="420" />
+  <img src="/fonts/bw_supported_fonts_28.jpeg" width="420" />
+</p>
+
+#### **Emoji Symbols**
+<p align="center">
+  <img src="/fonts/supported_fonts_29.jpeg" width="420" />
+  <img src="/fonts/bw_supported_fonts_29.jpeg" width="420" />
+</p
+
+---
 Note: Logo, Name & Domain is not fixed for now it's CORSPRITE and will change in beta release directly.
