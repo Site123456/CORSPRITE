@@ -22,11 +22,14 @@ Documentation will be available during beta at:
 [https://www.youtube.com/@CORSPRITE](https://www.youtube.com/@CORSPRITE)
 
 ---
+### Supported Voice Coverage
+⚠️ In Training, samples will be uploaded afterward.
+
 ### Supported Font Coverage
 
-All CORSPRITE training fonts are rendered through the default Windows font and the [IMGUI](https://github.com/ocornut/imgui) framework.
+All CORSPRITE fonts are rendered through the default Windows font, Unicode fonts and the [IMGUI](https://github.com/ocornut/imgui) default fonts.
 These canvases show the exact glyphs supported by the current CORSPRITE font stack.
-The following Unicode zones are fully supported and provide broad multilingual coverage with consistent rendering:
+The following fonts are fully supported and provide broad multilingual coverage with consistent rendering:
 
 #### **Uppercase English**
 <p align="center">
