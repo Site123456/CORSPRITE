@@ -30,7 +30,7 @@ The following Unicode zones are fully supported and provide broad multilingual c
 
 #### **Uppercase English**
 <p align="center">
-  <img src="/fonts/supported_fonts_00.jpeg" width="420" />
+  <img src="/fonts/supported_fonts_0.jpeg" width="420" />
   <img src="/fonts/bw_supported_fonts_00.jpeg" width="420" />
 </p>
 
