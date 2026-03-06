@@ -10,7 +10,9 @@
 
 #include <windows.h>
 #include <stdio.h>
-
+void OpenURL(const char* url) {
+    ShellExecuteA(nullptr, "open", url, nullptr, nullptr, SW_SHOWNORMAL);
+}
 int main()
 {
     if (!glfwInit())
@@ -207,6 +209,10 @@ int main()
 
         ImGui::Separator();
         ImGui::Spacing();
+        if (ImGui::Button("View Documentation", ImVec2(-1, 40))) {
+            OpenURL("https://corsprite-docs.vercel.app/");
+        }
+
 
         ImGui::PushFont(fontMedium);
         ImGui::Text("Circle Settings");
