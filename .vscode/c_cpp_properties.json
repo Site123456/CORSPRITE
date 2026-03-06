@@ -1,0 +1,33 @@
+{
+  "configurations": [
+    {
+      "name": "Win32",
+      "compilerPath": "C:/msys64/ucrt64/bin/g++.exe",
+      "cStandard": "c17",
+      "cppStandard": "c++17",
+      "intelliSenseMode": "windows-gcc-x64",
+      "defines": [
+        "_WINDOWS"
+      ],
+      "includePath": [
+        "${workspaceFolder}/**",                       // recursive include for everything
+        "${workspaceFolder}",                          // root folder (imgui.h, imconfig.h)
+        "${workspaceFolder}/include",                  // include folder (GLFW + ImGui optional headers)
+        "${workspaceFolder}/backends",                // imgui_impl_*.h backends
+        "C:/VulkanSDK/1.4.341.1/Include"             // Vulkan headers
+      ],
+      "browse": {
+        "path": [
+          "${workspaceFolder}/**",
+          "${workspaceFolder}",
+          "${workspaceFolder}/include",
+          "${workspaceFolder}/backends",
+          "C:/VulkanSDK/1.4.341.1/Include"
+        ],
+        "limitSymbolsToIncludedHeaders": true,
+        "databaseFilename": ""
+      }
+    }
+  ],
+  "version": 4
+}
