@@ -1,14 +1,21 @@
+# <p align="center"><img src="/logo/logo_banner_beta.png" width="480" /></p>
+
 <p align="center">
-  <img src="/logo/logo_banner_beta.png" alt="CORSPRITE Logo" width="480" />
+  <strong>A local‑first interactive assistant engineered to feel native, alive, and unmistakably yours.</strong><br>
+  <strong>Current builds target Windows x64.</strong>
 </p>
 
 <p align="center">
-<strong>A local‑first interactive assistant engineered to feel native, alive, and unmistakably yours.</strong> 
-<strong>Current builds target Windows x64.</strong>
+  <img src="/images/Showcaseof2026-03-07.png" width="720" />
 </p>
+
 <p align="center">
-  <img src="/images/Showcaseof2026-03-07.png" alt="CORSPRITE luncher" width="680" />
+  <a href="https://corsprite-docs.vercel.app/"><img src="https://img.shields.io/badge/Docs-Beta-blue?style=for-the-badge"></a>
+  <a href="https://www.youtube.com/@CORSPRITE"><img src="https://img.shields.io/badge/YouTube-Updates-red?style=for-the-badge"></a>
+  <img src="https://img.shields.io/badge/Platform-Windows%2011%20x64-00adef?style=for-the-badge">
+  <img src="https://img.shields.io/badge/Status-Alpha-orange?style=for-the-badge">
 </p>
+
 ---
 
 ## 🖥 Supported Platforms
@@ -17,7 +24,7 @@
 - Windows 11 (x64)
 
 **Planned**
-- Linux (x64)  
+- Linux (x64)
 - Windows (x86 / 32‑bit)
 
 ⚠️ Training datasets will **not** be distributed.  
@@ -27,13 +34,12 @@
 
 ## 📘 Documentation
 
-- Temporary docs: https://corsprite-docs.vercel.app/  
+- Docs: https://corsprite-docs.vercel.app/  
 - Dev updates: https://www.youtube.com/@CORSPRITE
 
-### Built with
+**Built with**
 - [nlohmann/json](https://github.com/nlohmann/json)
 - [Dear ImGui](https://github.com/ocornut/imgui)
-
 
 ---
 
@@ -63,9 +69,9 @@ CORSPRITE aims to deliver a **local, fast, GPU‑accelerated assistant** with:
 
 Install before building:
 
-- **Vulkan SDK**  
-- **GLFW**
-- **MinGW‑w64 / GCC 11+** (MSVC planned)
+- Vulkan SDK  
+- GLFW  
+- MinGW‑w64 / GCC 11+ (MSVC planned)
 
 Check compiler:
 ```bash
@@ -107,8 +113,7 @@ Active work includes:
 ## 🤝 Contributing
 
 Contribution guidelines will arrive during **Beta**.  
-Bug reports are welcome:  
-https://github.com/Site123456/CORSPRITE/issues
+Bug reports: https://github.com/Site123456/CORSPRITE/issues
 
 ---
 
