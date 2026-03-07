@@ -3,8 +3,8 @@
 </p>
 
 <p align="center">
-**A local‑first interactive assistant engineered to feel native, alive, and unmistakably yours.**  
-**Current builds target Windows x64.**
+<strong>A local‑first interactive assistant engineered to feel native, alive, and unmistakably yours.</strong> 
+<strong>Current builds target Windows x64.</strong>
 </p>
 <p align="center">
   <img src="/images/Showcaseof2026-03-07.png" alt="CORSPRITE luncher" width="680" />
