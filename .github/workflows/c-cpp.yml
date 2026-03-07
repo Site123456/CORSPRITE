@@ -12,7 +12,7 @@ jobs:
 
     defaults:
       run:
-        shell: msys2 {0}
+        shell: msys2 {0}  # Use MSYS2 environment
 
     steps:
       - name: Checkout repository
@@ -40,4 +40,5 @@ jobs:
           path: Corsprite_launcher.exe
 
       - name: Clean
-        run: mingw32-make clean
+        run: |
+          rm -f Corsprite_launcher.exe
