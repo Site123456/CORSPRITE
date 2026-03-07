@@ -10,15 +10,454 @@
 #include "stb_image.h"
 
 #include <windows.h>
+#include <algorithm>
 #include <windowsx.h>
-#include <stdio.h>
+#include <Lmcons.h>
 
-#include <unordered_map>
+#include <stdio.h>
 #include <string>
 #include <vector>
+#include <unordered_map>
 #include <fstream>
+
 #include <nlohmann/json.hpp>
+
+#include <dxgi.h>
+#include <intrin.h>
+#include <cstring>
+#include <mmsystem.h>
+
+
 using json = nlohmann::json;
+// ---------------- FPS / RAM ----------------
+
+static float fpsHistory[120] = {0};
+static int   fpsIndex        = 0;
+static float fpsAccum        = 0.0f;
+static int   fpsCount        = 0;
+
+static MEMORYSTATUSEX memInfo = { sizeof(memInfo) };
+static volatile bool g_closingMic = false;
+
+void UpdateHardwareStats()
+{
+    GlobalMemoryStatusEx(&memInfo);
+}
+
+// ---------------- Microphone (WinMM) ----------------
+
+static std::vector<std::string> micDevices;
+static int   selectedMic   = 0;
+static float micLevel      = 0.0f;
+
+static HWAVEIN   g_waveIn  = nullptr;
+static short     g_buffer[2048];
+static WAVEHDR   g_hdr;
+static bool      g_micOpen = false;
+
+static float g_smoothLevel = 0.0f;
+
+void CALLBACK WaveInProc(HWAVEIN hwi, UINT uMsg, DWORD_PTR, DWORD_PTR dwParam1, DWORD_PTR)
+{
+    if (g_closingMic) return;
+    if (uMsg != WIM_DATA || hwi != g_waveIn) return;
+
+    WAVEHDR* hdr = (WAVEHDR*)dwParam1;
+    int samples = hdr->dwBytesRecorded / sizeof(short);
+
+    float peak = 0.0f;
+    for (int i = 0; i < samples; ++i)
+    {
+        float v = fabsf(g_buffer[i] / 32768.0f);
+        if (v > peak) peak = v;
+    }
+
+    micLevel = peak;
+    waveInAddBuffer(g_waveIn, hdr, sizeof(WAVEHDR));
+}
+
+void InitMicrophones()
+{
+    UINT count = waveInGetNumDevs();
+    micDevices.clear();
+
+    for (UINT i = 0; i < count; ++i)
+    {
+        WAVEINCAPSW caps;
+        if (waveInGetDevCapsW(i, &caps, sizeof(caps)) == MMSYSERR_NOERROR)
+        {
+            std::wstring ws(caps.szPname);
+            micDevices.push_back(std::string(ws.begin(), ws.end()));
+        }
+    }
+
+    if (!micDevices.empty())
+        selectedMic = 0;
+}
+
+void CloseMic()
+{
+    if (!g_micOpen) return;
+
+    g_closingMic = true;
+
+    waveInStop(g_waveIn);
+    Sleep(10);
+    waveInReset(g_waveIn);
+
+    waveInUnprepareHeader(g_waveIn, &g_hdr, sizeof(g_hdr));
+    waveInClose(g_waveIn);
+
+    g_waveIn = nullptr;
+    g_micOpen = false;
+    micLevel = 0.0f;
+    g_smoothLevel = 0.0f;
+
+    g_closingMic = false;
+}
+
+bool RefreshMicrophones()
+{
+    std::vector<std::string> newList;
+
+    UINT count = waveInGetNumDevs();
+    for (UINT i = 0; i < count; ++i)
+    {
+        WAVEINCAPSW caps;
+        if (waveInGetDevCapsW(i, &caps, sizeof(caps)) == MMSYSERR_NOERROR)
+        {
+            std::wstring ws(caps.szPname);
+            newList.push_back(std::string(ws.begin(), ws.end()));
+        }
+    }
+
+    if (newList == micDevices)
+        return false;
+
+    micDevices = newList;
+
+    if (selectedMic >= (int)micDevices.size())
+    {
+        CloseMic();
+        selectedMic = micDevices.empty() ? 0 : 0;
+    }
+
+    return true;
+}
+void StartMic(int index)
+{
+    CloseMic();
+
+    UINT count = waveInGetNumDevs();
+    if (index < 0 || (UINT)index >= count) return;
+
+    WAVEFORMATEX fmt = {};
+    fmt.wFormatTag      = WAVE_FORMAT_PCM;
+    fmt.nChannels       = 1;
+    fmt.nSamplesPerSec  = 44100;
+    fmt.wBitsPerSample  = 16;
+    fmt.nBlockAlign     = fmt.nChannels * (fmt.wBitsPerSample / 8);
+    fmt.nAvgBytesPerSec = fmt.nSamplesPerSec * fmt.nBlockAlign;
+
+    if (waveInOpen(&g_waveIn, index, &fmt,
+                   (DWORD_PTR)WaveInProc, 0, CALLBACK_FUNCTION) != MMSYSERR_NOERROR)
+        return;
+
+    ZeroMemory(&g_hdr, sizeof(g_hdr));
+    g_hdr.lpData         = (LPSTR)g_buffer;
+    g_hdr.dwBufferLength = sizeof(g_buffer);
+
+    waveInPrepareHeader(g_waveIn, &g_hdr, sizeof(g_hdr));
+    waveInAddBuffer(g_waveIn, &g_hdr, sizeof(g_hdr));
+    waveInStart(g_waveIn);
+
+    g_micOpen = true;
+}
+
+void UpdateMicLevel()
+{
+    g_smoothLevel = g_smoothLevel * 0.85f + micLevel * 0.15f;
+}
+
+void AutoSelectMicOnStart()
+{
+    RefreshMicrophones();
+
+    // No devices → nothing to do
+    if (micDevices.empty())
+    {
+        selectedMic = -1;
+        return;
+    }
+
+    // If no mic selected yet, auto‑select the first one
+    if (selectedMic < 0 || selectedMic >= (int)micDevices.size())
+    {
+        selectedMic = 0;
+        StartMic(selectedMic);
+        return;
+    }
+
+    // If selected mic exists but mic is not open → open it
+    if (!g_micOpen)
+    {
+        StartMic(selectedMic);
+    }
+}
+
+static ImVec4 LerpColor(const ImVec4& a, const ImVec4& b, float t)
+{
+    if (t < 0.0f) t = 0.0f;
+    if (t > 1.0f) t = 1.0f;
+
+    return ImVec4(
+        a.x + (b.x - a.x) * t,
+        a.y + (b.y - a.y) * t,
+        a.z + (b.z - a.z) * t,
+        a.w + (b.w - a.w) * t
+    );
+}
+
+
+
+void DrawWavyMicVisualizer(float level, float width, float height)
+{
+    const int segments = 48;
+    ImVec2 pos = ImGui::GetCursorScreenPos();
+    float baseY = pos.y + height * 0.5f;
+    float startX = pos.x;
+
+    ImDrawList* dl = ImGui::GetWindowDrawList();
+
+    ImVec4 green  = ImVec4(0.20f, 0.85f, 0.30f, 1.0f);
+    ImVec4 yellow = ImVec4(0.95f, 0.80f, 0.20f, 1.0f);
+    ImVec4 red    = ImVec4(0.95f, 0.25f, 0.20f, 1.0f);
+
+    float tLevel = level;
+    if (tLevel < 0.0f) tLevel = 0.0f;
+    if (tLevel > 1.0f) tLevel = 1.0f;
+
+    float t = (tLevel < 0.5f) ? (tLevel / 0.5f) : ((tLevel - 0.5f) / 0.5f);
+    ImVec4 midColor = (tLevel < 0.5f) ? LerpColor(green, yellow, t)
+                                      : LerpColor(yellow, red, t);
+
+    float time = ImGui::GetTime();
+
+    for (int i = 0; i < segments; i++)
+    {
+        float s = (float)i / (segments - 1);
+        float x = startX + s * width;
+
+        float wave = sinf(s * 6.28318f * 2.0f + time * 4.0f);
+        float amp  = wave * tLevel * (height * 0.45f);
+
+        ImVec4 c = LerpColor(midColor, ImVec4(1.0f, 1.0f, 1.0f, 1.0f), s * 0.18f);
+        ImU32 col = ImGui::GetColorU32(c);
+
+        dl->AddLine(
+            ImVec2(x, baseY - amp),
+            ImVec2(x, baseY + amp),
+            col,
+            3.0f
+        );
+    }
+
+    ImGui::Dummy(ImVec2(width, height));
+}
+
+void DrawPerformanceTool(ImFont* fontMedium, ImFont* fontLarge)
+{
+    ImGuiIO& io = ImGui::GetIO();
+    RefreshMicrophones();
+    UpdateMicLevel();
+
+    float fps = io.Framerate;
+    fpsAccum += fps;
+    fpsCount++;
+
+    fpsHistory[fpsIndex] = fps;
+    fpsIndex = (fpsIndex + 1) % 120;
+
+    float avgFPS = fpsAccum / (fpsCount > 0 ? fpsCount : 1);
+    if (fpsCount >= 240)
+    {
+        fpsAccum = fps;
+        fpsCount = 1;
+    }
+
+    UpdateHardwareStats();
+    const double gb = 1024.0 * 1024.0 * 1024.0;
+
+    ImGuiWindowFlags flags =
+        ImGuiWindowFlags_NoDecoration |
+        ImGuiWindowFlags_NoMove |
+        ImGuiWindowFlags_NoSavedSettings |
+        ImGuiWindowFlags_NoFocusOnAppearing |
+        ImGuiWindowFlags_NoNav;
+
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 18.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(12, 10));
+
+    ImVec2 size(360, 600);
+    ImVec2 pos(io.DisplaySize.x - size.x - 35, 35);
+
+    ImGui::SetNextWindowPos(pos, ImGuiCond_Always);
+    ImGui::SetNextWindowSize(size, ImGuiCond_Always);
+    ImGui::SetNextWindowBgAlpha(0.97f);
+
+    ImGui::Begin("PerfTool", nullptr, flags);
+
+    ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 14.0f);
+    ImGui::BeginChild("##perf_card", ImVec2(0, 230), true);
+
+    ImGui::PushFont(fontMedium);
+
+    ImGui::Text("Server Performance");
+    ImGui::Spacing();
+
+    ImGui::Text("Avg FPS: %.1f", avgFPS);
+
+    ImGui::Spacing();
+
+    ImGui::PushStyleColor(ImGuiCol_PlotLines, ImVec4(0.40f, 0.65f, 1.0f, 1.0f));
+    ImGui::PlotLines("##fpsgraph", fpsHistory, 120, 0, nullptr, 0.0f, 160.0f, ImVec2(ImGui::GetContentRegionAvail().x, 60));
+    ImGui::PopStyleColor();
+
+    ImGui::Spacing();
+
+    ImGui::Text("RAM: %.2f / %.2f GB",
+        (memInfo.ullTotalPhys - memInfo.ullAvailPhys) / gb,
+        memInfo.ullTotalPhys / gb);
+
+    ImGui::PopFont();
+    ImGui::EndChild();
+    ImGui::PopStyleVar();
+
+    ImGui::Spacing();
+
+    ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 14.0f);
+    ImGui::BeginChild("##mic_card", ImVec2(0, 310), true);
+
+    ImGui::PushFont(fontMedium);
+
+    ImVec2 start = ImGui::GetCursorScreenPos();
+    float fullWidth = ImGui::GetContentRegionAvail().x;
+
+    // Title (left)
+    ImGui::Text("User Voice Input");
+
+    // Status pill (right)
+    ImVec4 statusColor = g_micOpen
+        ? ImVec4(0.25f, 0.85f, 0.45f, 1.0f)
+        : ImVec4(0.85f, 0.35f, 0.35f, 1.0f);
+
+    const char* statusText = g_micOpen ? "Connected" : "Idle";
+
+    // Compute pill size
+    ImVec2 pillSize = ImGui::CalcTextSize(statusText);
+    pillSize.x += 22.0f;   // Center text
+    pillSize.y += 16.0f;
+
+    // Move to right side
+    float pillX = start.x + fullWidth - pillSize.x;
+    float pillY = start.y - 8.0f; // slight vertical offset for center text better
+
+    ImGui::SetCursorScreenPos(ImVec2(pillX, pillY));
+
+    ImGui::PushStyleColor(ImGuiCol_Button, statusColor);
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, statusColor);
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive, statusColor);
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, pillSize.y * 0.5f);
+
+    ImGui::Button(statusText, pillSize);
+
+    ImGui::PopStyleVar();
+    ImGui::PopStyleColor(3);
+
+    // Restore cursor for next elements
+    ImGui::SetCursorScreenPos(ImVec2(start.x, start.y + pillSize.y + 10.0f));
+
+    ImGui::PopFont();
+    ImGui::PushFont(fontMedium);
+
+    ImGui::Spacing();
+
+    // Device selector
+    if (!micDevices.empty())
+    {
+        const char* current = micDevices[selectedMic].c_str();
+        ImGui::PushItemWidth(-1.0f);
+        if (ImGui::BeginCombo("##miccombo", current))
+        {
+            for (int i = 0; i < (int)micDevices.size(); i++)
+            {
+                bool sel = (i == selectedMic);
+                if (ImGui::Selectable(micDevices[i].c_str(), sel))
+                {
+                    selectedMic = i;
+                    StartMic(i);
+                }
+                if (sel) ImGui::SetItemDefaultFocus();
+            }
+            ImGui::EndCombo();
+        }
+        ImGui::PopItemWidth();
+    }
+    else
+    {
+        ImGui::TextColored(ImVec4(1.0f, 0.4f, 0.4f, 1.0f), "No input devices detected");
+    }
+
+    ImGui::Spacing();
+    ImGui::Separator();
+    ImGui::Spacing();
+
+    // Input level bar
+    ImGui::Text("Input Level");
+    ImGui::SameLine();
+    ImGui::TextDisabled("(live)");
+
+    ImGui::Spacing();
+
+    ImDrawList* dl = ImGui::GetWindowDrawList();
+    ImVec2 barPos = ImGui::GetCursorScreenPos();
+    float barWidth = ImGui::GetContentRegionAvail().x;
+    float barHeight = 12.0f;
+
+    ImU32 bgCol  = ImGui::GetColorU32(ImVec4(0.16f, 0.18f, 0.22f, 1.0f));
+    ImU32 fillLo = ImGui::GetColorU32(ImVec4(0.30f, 0.75f, 1.0f, 1.0f));
+    ImU32 fillHi = ImGui::GetColorU32(ImVec4(1.0f, 0.45f, 0.45f, 1.0f));
+
+    dl->AddRectFilled(barPos,
+                      ImVec2(barPos.x + barWidth, barPos.y + barHeight),
+                      bgCol, barHeight * 0.5f);
+
+    float lvl = g_smoothLevel;
+    if (lvl < 0.0f) lvl = 0.0f;
+    if (lvl > 1.0f) lvl = 1.0f;
+
+    float filled = barWidth * lvl;
+    ImU32 fillCol = (lvl < 0.7f) ? fillLo : fillHi;
+
+    dl->AddRectFilled(barPos,
+                      ImVec2(barPos.x + filled, barPos.y + barHeight),
+                      fillCol, barHeight * 0.5f);
+
+    ImGui::Dummy(ImVec2(barWidth, barHeight + 6.0f));
+
+    ImGui::Spacing();
+
+    // Wave visualizer
+    DrawWavyMicVisualizer(g_smoothLevel, barWidth, 48.0f);
+
+    ImGui::PopFont();
+    ImGui::EndChild();
+    ImGui::PopStyleVar();
+
+    ImGui::End();
+    ImGui::PopStyleVar(3);
+}
 
 void OpenURL(const char* url) {
     ShellExecuteA(nullptr, "open", url, nullptr, nullptr, SW_SHOWNORMAL);
@@ -67,21 +506,12 @@ LRESULT CALLBACK OverlayWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
 
     return CallWindowProc(g_OriginalWndProc, hwnd, msg, wParam, lParam);
 }
+
 static std::unordered_map<ImGuiID, float> g_SwitchAnim;
 
 inline float LerpFloat(float a, float b, float t)
 {
     return a + (b - a) * t;
-}
-
-inline ImVec4 LerpColor(const ImVec4& a, const ImVec4& b, float t)
-{
-    return ImVec4(
-        a.x + (b.x - a.x) * t,
-        a.y + (b.y - a.y) * t,
-        a.z + (b.z - a.z) * t,
-        a.w + (b.w - a.w) * t
-    );
 }
 
 bool ToggleSwitch(const char* id, bool* v, ImVec4 onColor, ImVec4 offColor, ImVec4 knobColor)
@@ -106,10 +536,31 @@ bool ToggleSwitch(const char* id, bool* v, ImVec4 onColor, ImVec4 offColor, ImVe
 
     float target = *v ? 1.0f : 0.0f;
     anim = LerpFloat(anim, target, 0.18f);
+    ImVec4 bg4 = LerpColor(offColor, onColor, anim);
+    ImU32 bg  = ImGui::GetColorU32(bg4);
 
-    ImVec4 bg = LerpColor(offColor, onColor, anim);
+
     if (hovered)
-        bg = ImVec4(bg.x + 0.05f, bg.y + 0.05f, bg.z + 0.05f, bg.w);
+    {
+        // Convert packed ImU32 → float RGBA
+        ImVec4 col = ImGui::ColorConvertU32ToFloat4(bg);
+
+        // SAFE manual clamp (no min/max macros)
+        col.x = col.x + 0.05f;
+        if (col.x > 1.0f) col.x = 1.0f;
+
+        col.y = col.y + 0.05f;
+        if (col.y > 1.0f) col.y = 1.0f;
+
+        col.z = col.z + 0.05f;
+        if (col.z > 1.0f) col.z = 1.0f;
+
+        // Convert back to ImU32
+        bg = ImGui::GetColorU32(col);
+
+        ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+    }
+
 
     ImU32 bgCol   = ImGui::GetColorU32(bg);
     ImU32 knobCol = ImGui::GetColorU32(knobColor);
@@ -132,6 +583,7 @@ bool ToggleSwitch(const char* id, bool* v, ImVec4 onColor, ImVec4 offColor, ImVe
     ImGui::PopID();
     return clicked;
 }
+
 void SettingsRow(const char* id, const char* title, const char* desc,
                  bool* value, ImFont* fontXS,
                  ImVec4 onColor, ImVec4 offColor, ImVec4 knobColor)
@@ -149,6 +601,10 @@ void SettingsRow(const char* id, const char* title, const char* desc,
 
     if (rowClicked)
         *value = !*value;
+    
+    if (ImGui::IsItemHovered())
+        ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+        
 
     // Reset cursor to draw content on top of the invisible button
     ImGui::SetCursorScreenPos(rowStart);
@@ -185,10 +641,70 @@ void SettingsRow(const char* id, const char* title, const char* desc,
     ImGui::Spacing();
     ImGui::Spacing();
 }
-void OptionRow(const char* id, const char* title, const char* desc,
-               int* currentIndex, const char* const* options, int optionCount,
-               ImFont* fontXS)
 
+void InputRow(const char* id, const char* label, const char* subtext, char* buffer, size_t bufferSize, const char* placeholder, ImFont* fontSmall, ImFont* fontMedium)
+{
+    ImGui::PushID(id);
+
+    ImGui::PushFont(fontMedium);
+    ImGui::TextUnformatted(label);
+    ImGui::PopFont();
+    ImGui::PushFont(fontSmall);
+
+    if (subtext && subtext[0] != '\0')
+    {
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.65f, 0.65f, 0.65f, 1.0f));
+        ImGui::TextWrapped("%s", subtext);
+        ImGui::PopStyleColor();
+    }
+    ImGui::PopFont();
+
+    ImGui::Spacing();
+
+    // -----------------------------
+    // INPUT FIELD STYLE
+    // -----------------------------
+    ImVec4 bg        = ImVec4(0.14f, 0.14f, 0.14f, 1.0f);
+    ImVec4 bgHover   = ImVec4(0.18f, 0.18f, 0.18f, 1.0f);
+    ImVec4 bgActive  = ImVec4(0.22f, 0.22f, 0.22f, 1.0f);
+    ImVec4 border    = ImVec4(0.25f, 0.45f, 1.00f, 1.0f);
+    ImVec4 borderDim = ImVec4(0.30f, 0.30f, 0.30f, 1.0f);
+
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(12, 10));
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.0f);
+
+    ImGui::PushStyleColor(ImGuiCol_FrameBg,        bg);
+    ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, bgHover);
+    ImGui::PushStyleColor(ImGuiCol_FrameBgActive,  bgActive);
+    ImGui::PushStyleColor(ImGuiCol_Border,         borderDim);
+    ImGui::PushStyleColor(ImGuiCol_BorderShadow,   ImVec4(0,0,0,0));
+
+
+    ImGui::PushItemWidth(-1);
+    ImGui::InputTextWithHint("##input", placeholder, buffer, bufferSize);
+    ImGui::PopItemWidth();
+
+    // Hover cursor
+    if (ImGui::IsItemHovered())
+        ImGui::SetMouseCursor(ImGuiMouseCursor_TextInput);
+
+    // Active border highlight
+    if (ImGui::IsItemActive())
+        ImGui::GetStyle().Colors[ImGuiCol_Border] = border;
+
+    // Restore
+    ImGui::PopStyleColor(5);
+    ImGui::PopStyleVar(3);
+
+    ImGui::Spacing();
+    ImGui::Separator();
+    ImGui::Spacing();
+
+    ImGui::PopID();
+}
+
+void OptionRow(const char* id, const char* title, const char* desc, int* currentIndex, const char* const* options, int optionCount, ImFont* fontXS)
 {
     ImGui::PushID(id);
 
@@ -198,7 +714,10 @@ void OptionRow(const char* id, const char* title, const char* desc,
     // Full-row click zone
     ImVec2 rowStart = ImGui::GetCursorScreenPos();
     ImGui::InvisibleButton("##row_click", ImVec2(fullWidth, rowHeight));
+        
     bool rowClicked = ImGui::IsItemClicked();
+    if (ImGui::IsItemHovered())
+        ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
 
     // Reset cursor to draw content on top
     ImGui::SetCursorScreenPos(rowStart);
@@ -243,10 +762,11 @@ void OptionRow(const char* id, const char* title, const char* desc,
     // Clicking the row also opens the popup
     if (rowClicked)
         ImGui::OpenPopup("popup");
-
     // POPUP WINDOW ABOVE — with rounded corners
     ImGui::PushStyleVar(ImGuiStyleVar_PopupRounding, 8.0f);   // roundness
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(10, 10)); // nicer padding
+    if (ImGui::IsItemHovered())
+        ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
 
     if (ImGui::BeginPopup("popup"))
     {
@@ -262,15 +782,39 @@ void OptionRow(const char* id, const char* title, const char* desc,
         ImGui::EndPopup();
     }
 
-    ImGui::PopStyleVar(2); // restore rounding + padding
+    ImGui::PopStyleVar(2);
 
-        ImGui::PopID();
-        ImGui::Spacing();
-        ImGui::Spacing();
-        ImGui::Spacing();
-        ImGui::Spacing();
-    }
+    ImGui::PopID();
+    ImGui::Spacing();
+    ImGui::Spacing();
+    ImGui::Spacing();
+    ImGui::Spacing();
+}
 
+bool ModernButton(const char* label, float height = 40.0f)
+{
+    ImVec4 normal = ImVec4(0.18f, 0.18f, 0.18f, 1.0f);
+    ImVec4 hover  = ImVec4(0.24f, 0.24f, 0.24f, 1.0f);
+    ImVec4 active = ImVec4(0.28f, 0.28f, 0.28f, 1.0f);
+
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(12, 10));
+    ImGui::PushStyleColor(ImGuiCol_Button, normal);
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, hover);
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive, active);
+
+    bool clicked = ImGui::Button(label, ImVec2(ImGui::GetContentRegionAvail().x, height));
+
+    if (ImGui::IsItemHovered())
+        ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+
+    ImGui::PopStyleColor(3);
+    ImGui::PopStyleVar(2);
+
+    return clicked;
+}
+
+// Main entry point
 int main()
 {
     FreeConsole();
@@ -335,15 +879,19 @@ int main()
         GWLP_WNDPROC,
         (LONG_PTR)OverlayWndProc
     );
+    // Initialize microphones
+    InitMicrophones();
+    AutoSelectMicOnStart();
 
     // --- INIT IMGUI ---
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO();
-    ImFont* fontSmallest  = io.Fonts->AddFontFromFileTTF("fonts/Roboto-VariableFont_wdth,wght.ttf", 12.0f);
-    ImFont* fontSmall     = io.Fonts->AddFontFromFileTTF("fonts/Roboto-VariableFont_wdth,wght.ttf", 18.0f);
-    ImFont* fontMedium    = io.Fonts->AddFontFromFileTTF("fonts/Roboto-VariableFont_wdth,wght.ttf", 22.0f);
-    ImFont* fontLarge     = io.Fonts->AddFontFromFileTTF("fonts/Roboto-VariableFont_wdth,wght.ttf", 32.0f);
+    ImFont* fontSmallest  = io.Fonts->AddFontFromFileTTF("fonts/NotoSans-VariableFont_wdth,wght.ttf", 12.0f);
+    ImFont* fontSmall     = io.Fonts->AddFontFromFileTTF("fonts/NotoSans-VariableFont_wdth,wght.ttf", 18.0f);
+    ImFont* fontMedium    = io.Fonts->AddFontFromFileTTF("fonts/NotoSans-VariableFont_wdth,wght.ttf", 22.0f);
+    ImFont* fontLarge     = io.Fonts->AddFontFromFileTTF("fonts/NotoSans-VariableFont_wdth,wght.ttf", 38.0f);
+    
     io.FontDefault = fontMedium;
 
     ImGuiStyle& s = ImGui::GetStyle();
@@ -360,7 +908,7 @@ int main()
     ImVec4 circleColor = ImVec4(0.1f, 1.0f, 0.1f, 1.0f);
     float radius = 3.0f;
     
-    float alertHeight = screen.bottom - screen.top - 360.0f; // taskbar compensation + main panel height
+    float alertHeight = screen.bottom - screen.top - 360.0f;
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -393,6 +941,17 @@ int main()
     
     static int languageIndex = 0;
 
+    
+    static char username[128] = "";
+
+    // Only load once at startup
+    static bool loaded = false;
+    if (!loaded)
+    {
+        DWORD size = UNLEN + 1;
+        GetUserNameA(username, &size);
+        loaded = true;
+    }
     std::ifstream file("assistant_config.json");
     if (file.is_open())
     {
@@ -400,9 +959,7 @@ int main()
         file >> config;
         file.close();
 
-        // -----------------------------
-        // ASSISTANT — CORE SETTINGS
-        // -----------------------------
+        // Json parsing with safety checks
         if (config.contains("assistant"))
         {
             auto& a = config["assistant"];
@@ -416,11 +973,15 @@ int main()
             if (a.contains("follow_cursor"))    followCursor      = a["follow_cursor"];
             if (a.contains("idle_animations"))  idleAnimations    = a["idle_animations"];
             if (a.contains("language"))  languageIndex    = a["language"];
+            if (a.contains("username") && a["username"].is_string())
+            {
+                std::string uname = a["username"];
+                strncpy(username, uname.c_str(), sizeof(username) - 1);
+                username[sizeof(username) - 1] = '\0'; // ensure null-termination
+            }
+
         }
 
-        // -----------------------------
-        // INDICATOR SETTINGS
-        // -----------------------------
         if (config.contains("indicator"))
         {
             auto& ind = config["indicator"];
@@ -435,7 +996,6 @@ int main()
             if (ind.contains("radius")) radius = ind["radius"];
         }
     }
-
     while (!glfwWindowShouldClose(window))
     {
         glfwPollEvents();
@@ -517,28 +1077,8 @@ int main()
         ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 1, 1, 1));
         
         ImGui::BeginChild("Windowcontaindata", ImVec2(0, alertHeight), true);
+        
         ImGui::Spacing();
-
-        const char* languageOptions[] =
-        {
-            "English",
-            "French",
-            "German",
-            "Spanish",
-            "Italian",
-            "Japanese",
-            "Korean"
-        };
-
-        OptionRow(
-            "assistant_language",
-            "Language",
-            "Select the language used for CORSPRITE assistant responses.",
-            &languageIndex,
-            languageOptions,
-            IM_ARRAYSIZE(languageOptions),
-            fontSmall
-        );
         ImGui::Spacing();
         ImGui::PopStyleColor();
         ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(1.0f, 0.30f, 0.00f, 0.90f));
@@ -552,14 +1092,47 @@ int main()
 
 
         ImGui::EndChild();
+        ImGui::Spacing();
+        if (ModernButton("View Documentation"))
+        {
+            OpenURL("https://corsprite-docs.vercel.app/");
+            glfwSetWindowShouldClose(window, GLFW_TRUE);
+        }
+
         
         ImGui::PopStyleColor();
         ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0,0,0,0));
         ImGui::Spacing();
-        if (ImGui::Button("View Documentation", ImVec2(-1, 40))) {
-            OpenURL("https://corsprite-docs.vercel.app/");
-            glfwSetWindowShouldClose(window, GLFW_TRUE);
-        }
+        // Roberto language options
+        const char* languageOptions[] =
+        {
+            "English",
+            "Français",
+            "Deutsch"
+        };
+
+        OptionRow(
+            "assistant_language",
+            "Language",
+            "Select the language used for CORSPRITE assistant responses.",
+            &languageIndex,
+            languageOptions,
+            IM_ARRAYSIZE(languageOptions),
+            fontSmall
+        );
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::Spacing();
+        InputRow(
+            "username_row",
+            "Username",
+            "How should your name be called?",
+            username,
+            128,
+            "Your username...",
+            fontSmall,
+            fontMedium
+        );
         ImGui::Spacing();
 
         // Shared toggle colors
@@ -660,7 +1233,6 @@ int main()
         ImGui::PopFont();
 
         ImGui::Spacing();
-        ImGui::Separator();
         ImGui::Spacing();
 
         ImGui::EndChild();
@@ -685,6 +1257,9 @@ int main()
         ImGui::PopStyleColor(3);
         ImGui::PopStyleVar(2);
 
+        if (ImGui::IsItemHovered())
+            ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+
         if (pressed)
         {
             json config;
@@ -703,7 +1278,8 @@ int main()
             config["assistant"]["interactive_mode"] = interactiveMode;
             config["assistant"]["follow_cursor"]    = followCursor;
             config["assistant"]["idle_animations"]  = idleAnimations;
-            config["assistant"]["language"]          = languageIndex;
+            config["assistant"]["language"]               = languageIndex;
+            config["assistant"]["username"]               = std::string(username);
 
             // -----------------------------
             // INDICATOR SETTINGS
@@ -743,12 +1319,31 @@ int main()
         ImGui::PushStyleColor(ImGuiCol_ButtonActive,  quitActive);
 
         ImGui::PushFont(fontMedium);
-        bool quitPressed = ImGui::Button("Quit CORSPRITE", ImVec2(-1, 40));
-        ImGui::PopFont();
+
+        // Colors
+        ImVec4 normal = ImVec4(0.75f, 0.15f, 0.15f, 1.0f);   // red
+        ImVec4 hover  = ImVec4(0.90f, 0.20f, 0.20f, 1.0f);   // brighter red
+        ImVec4 active = ImVec4(0.60f, 0.10f, 0.10f, 1.0f);   // darker red
+
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.0f);
+        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(12, 10));
+        ImGui::PushStyleColor(ImGuiCol_Button, normal);
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, hover);
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, active);
+
+        bool quitPressed = ImGui::Button("Cancel & Quit", ImVec2(-1, 40));
+
+        if (ImGui::IsItemHovered())
+            ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
 
         ImGui::PopStyleColor(3);
         ImGui::PopStyleVar(2);
 
+        ImGui::PopFont();
+
+
+        ImGui::PopStyleColor(3);
+        ImGui::PopStyleVar(2);
         if (quitPressed)
             glfwSetWindowShouldClose(window, GLFW_TRUE);
 
@@ -768,6 +1363,8 @@ int main()
 
         ImGui::End();
 
+        
+        DrawPerformanceTool(fontMedium, fontLarge);
         // --- DRAW CIRCLE (STATUS DOT) ---
         ImVec2 center(
             io.DisplaySize.x - radius - 10.0f,

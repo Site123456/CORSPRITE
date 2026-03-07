@@ -55,7 +55,7 @@ https://github.com/ocornut/imgui
 CORSPRITE is designed to be a **local-first interactive assistant** that feels:
 
 - native to the system
-- responsive
+- responsive not entirely minimum screen: 620 width X 700 height
 - visually alive
 - fully customizable
 
@@ -83,13 +83,16 @@ CORSPRITE uses a **multi-language architecture**:
 User
  │
  ▼
-C++ UI Layer (ImGui)
+Corsprite Luncher (ImGui) ~140mo
  │
  ▼
-Python Assistant Logic
+C++ UI Layer (ImGui) ~40GO
  │
  ▼
-Rust System Bridge
+Python Assistant Logic ~180GO
+ │
+ ▼
+Rust System Bridge ~6GO
  │
  ▼
 Operating System
