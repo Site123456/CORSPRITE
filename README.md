@@ -110,6 +110,30 @@ Active work includes:
 
 ---
 
+## 🔊 Audio Auto‑Detection
+
+CORSPRITE includes an **automatic audio device detection system** designed to make voice interaction seamless and reliable across different hardware setups.
+
+### What the system does
+- Detects available **microphones** at launch  
+- Monitors **device changes** in real time (USB plug/unplug, Bluetooth connect/disconnect)  
+- Automatically switches to the **active / highest‑priority** input device  
+- Prevents audio dropouts when devices are added or removed  
+- Ensures the assistant is always ready to listen without manual configuration  
+
+### How it works internally
+- Uses a lightweight Rust bridge for **low‑latency device enumeration**  
+- Communicates with the Python logic layer for **voice activation**  
+- Exposes device state to the C++ UI for **live visual feedback**  
+- Supports future expansion (noise profiling, gain control, multi‑device routing)
+
+### Current status
+- Auto‑detection is **enabled in alpha builds**  
+- Manual device selection UI is in development  
+- Advanced audio processing (AEC, AGC, noise suppression) is planned for beta  
+
+---
+
 ## 🤝 Contributing
 
 Contribution guidelines will arrive during **Beta**.  
