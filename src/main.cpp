@@ -27,10 +27,53 @@
 #include <cstring>
 #include <mmsystem.h>
 
-
 using json = nlohmann::json;
-// ---------------- FPS / RAM ----------------
 
+struct CharacterGen {
+    // proportions
+    int headToBody = 1;
+    int bodyType = 0;
+    int heightClass = 1;
+
+    // face
+    float eyeSize = 0.8f;
+    float eyeAngle = 0.2f;
+    float chinSharpness = 0.4f;
+    float browAngle = 0.1f;
+    float blush = 0.5f;
+
+    // colors
+    ImVec4 hairMain = ImVec4(1.0f, 0.53f, 0.80f, 1.0f);
+    ImVec4 hairAccent = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
+    ImVec4 eyeColor = ImVec4(0.3f, 0.6f, 1.0f, 1.0f);
+    ImVec4 skinColor = ImVec4(1.0f, 0.85f, 0.75f, 1.0f);
+
+    // style
+    int artStyle = 0;
+    int lineWeight = 1;
+    int colorStyle = 1;
+
+    // hair
+    int baseStyle = 4;
+    int bangs = 1;
+
+    // outfit
+    int outfit = 0;
+    int detailLevel = 2;
+    int paletteMood = 0;
+
+    // personality
+    int vibe = 3;
+    int expression = 0;
+
+    // generated text
+    std::string description;
+    std::string jsonString;
+};
+
+CharacterGen CG;
+
+// FPS / RAM
 static float fpsHistory[120] = {0};
 static int   fpsIndex        = 0;
 static float fpsAccum        = 0.0f;
@@ -44,8 +87,7 @@ void UpdateHardwareStats()
     GlobalMemoryStatusEx(&memInfo);
 }
 
-// ---------------- Microphone (WinMM) ----------------
-
+// Microphone
 static std::vector<std::string> micDevices;
 static int   selectedMic   = 0;
 static float micLevel      = 0.0f;
@@ -295,73 +337,112 @@ void DrawPerformanceTool(ImFont* fontMedium, ImFont* fontLarge)
         ImGuiWindowFlags_NoFocusOnAppearing |
         ImGuiWindowFlags_NoNav;
 
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 18.0f);
-    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.0f);
-    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(12, 10));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 20.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 12.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(14, 12));
 
-    ImVec2 size(360, 600);
-    ImVec2 pos(io.DisplaySize.x - size.x - 35, 35);
+    // Bigger window
+    ImVec2 size(900, 440);
+    ImVec2 pos(io.DisplaySize.x - size.x - 20, 20);
 
     ImGui::SetNextWindowPos(pos, ImGuiCond_Always);
     ImGui::SetNextWindowSize(size, ImGuiCond_Always);
-    ImGui::SetNextWindowBgAlpha(0.97f);
+    ImGui::SetNextWindowBgAlpha(0);
 
     ImGui::Begin("PerfTool", nullptr, flags);
 
-    ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 14.0f);
-    ImGui::BeginChild("##perf_card", ImVec2(0, 230), true);
+    ImGui::BeginGroup();
 
+    ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 14.0f);
+    ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0,0,0,0.35f));
+
+    ImGui::BeginChild("##perf_card", ImVec2(size.x * 0.53f, 0), true);
+    ImGui::PushFont(fontLarge);
+    ImGui::Text("Corsprite Launcher");
+    ImGui::PopFont();
     ImGui::PushFont(fontMedium);
 
-    ImGui::Text("Server Performance");
-    ImGui::Spacing();
-
-    ImGui::Text("Avg FPS: %.1f", avgFPS);
-
-    ImGui::Spacing();
-
-    ImGui::PushStyleColor(ImGuiCol_PlotLines, ImVec4(0.40f, 0.65f, 1.0f, 1.0f));
-    ImGui::PlotLines("##fpsgraph", fpsHistory, 120, 0, nullptr, 0.0f, 160.0f, ImVec2(ImGui::GetContentRegionAvail().x, 60));
-    ImGui::PopStyleColor();
-
-    ImGui::Spacing();
-
-    ImGui::Text("RAM: %.2f / %.2f GB",
+    ImGui::Text("FPS: %.1f", avgFPS);
+    ImGui::SameLine();
+    ImGui::Text(
+        "RAM: %.2f / %.2f GB",
         (memInfo.ullTotalPhys - memInfo.ullAvailPhys) / gb,
-        memInfo.ullTotalPhys / gb);
+        memInfo.ullTotalPhys / gb
+    );
+    ImGui::TextWrapped(
+        "Simple way to Run Corsprite server and client on the same device with live "
+        "performance metrics and real-time control of microphone, speakers, "
+        "camera, and screen capture."
+    );ImGuiTableFlags tflags =
+    ImGuiTableFlags_BordersInnerV |
+    ImGuiTableFlags_RowBg |
+    ImGuiTableFlags_SizingStretchProp |
+    ImGuiTableFlags_NoSavedSettings;
+
+    if (ImGui::BeginTable("##limits", 2, tflags, ImVec2(ImGui::GetContentRegionAvail().x * 0.95f, 0)))
+    {
+        ImGui::TableSetupColumn("Feature", ImGuiTableColumnFlags_WidthFixed, 110.0f);
+        ImGui::TableSetupColumn("Details");
+        ImGui::TableHeadersRow();
+
+        // Platform
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn();
+        ImGui::Text("Platform");
+        ImGui::TableNextColumn();
+        ImGui::Text("Windows (x64)");
+
+        // Device load
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn();
+        ImGui::Text("Device Load");
+        ImGui::TableNextColumn();
+        ImGui::TextWrapped("Running server and client together may increase CPU usage.");
+
+        // Minimum specs
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn();
+        ImGui::Text("Minimum");
+        ImGui::TableNextColumn();
+        ImGui::TextWrapped("Windows 11 • 16 GB RAM • Quad-core CPU • GPU with 2 GB VRAM recommended.");
+
+        ImGui::EndTable();
+    }
 
     ImGui::PopFont();
-    ImGui::EndChild();
-    ImGui::PopStyleVar();
 
-    ImGui::Spacing();
+    ImGui::EndChild();
+    ImGui::PopStyleColor();
+    ImGui::PopStyleVar();
+    ImGui::EndGroup();
+
+    ImGui::SameLine();
+
+    // MIC
+    ImGui::BeginGroup();
 
     ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 14.0f);
-    ImGui::BeginChild("##mic_card", ImVec2(0, 310), true);
+    ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0,0,0,0.35f));
+
+    ImGui::BeginChild("##mic_card", ImVec2(size.x * 0.40f, 0), true);
 
     ImGui::PushFont(fontMedium);
 
     ImVec2 start = ImGui::GetCursorScreenPos();
     float fullWidth = ImGui::GetContentRegionAvail().x;
 
-    // Title (left)
     ImGui::Text("User Voice Input");
 
-    // Status pill (right)
-    ImVec4 statusColor = g_micOpen
-        ? ImVec4(0.25f, 0.85f, 0.45f, 1.0f)
-        : ImVec4(0.85f, 0.35f, 0.35f, 1.0f);
+    ImVec4 statusColor = g_micOpen? ImVec4(0.12f, 0.55f, 0.28f, 1.0f) : ImVec4(0.60f, 0.18f, 0.18f, 1.0f);
 
     const char* statusText = g_micOpen ? "Connected" : "Idle";
 
-    // Compute pill size
     ImVec2 pillSize = ImGui::CalcTextSize(statusText);
-    pillSize.x += 22.0f;   // Center text
-    pillSize.y += 16.0f;
+    pillSize.x += 24;
+    pillSize.y += 14;
 
-    // Move to right side
     float pillX = start.x + fullWidth - pillSize.x;
-    float pillY = start.y - 8.0f; // slight vertical offset for center text better
+    float pillY = start.y - 6;
 
     ImGui::SetCursorScreenPos(ImVec2(pillX, pillY));
 
@@ -375,45 +456,49 @@ void DrawPerformanceTool(ImFont* fontMedium, ImFont* fontLarge)
     ImGui::PopStyleVar();
     ImGui::PopStyleColor(3);
 
-    // Restore cursor for next elements
-    ImGui::SetCursorScreenPos(ImVec2(start.x, start.y + pillSize.y + 10.0f));
-
-    ImGui::PopFont();
-    ImGui::PushFont(fontMedium);
+    ImGui::SetCursorScreenPos(ImVec2(start.x, start.y + pillSize.y + 12));
 
     ImGui::Spacing();
 
-    // Device selector
     if (!micDevices.empty())
     {
         const char* current = micDevices[selectedMic].c_str();
-        ImGui::PushItemWidth(-1.0f);
+
+        ImGui::PushItemWidth(-1);
+
         if (ImGui::BeginCombo("##miccombo", current))
         {
             for (int i = 0; i < (int)micDevices.size(); i++)
             {
                 bool sel = (i == selectedMic);
+
                 if (ImGui::Selectable(micDevices[i].c_str(), sel))
                 {
                     selectedMic = i;
                     StartMic(i);
                 }
-                if (sel) ImGui::SetItemDefaultFocus();
+
+                if (sel)
+                    ImGui::SetItemDefaultFocus();
             }
+
             ImGui::EndCombo();
         }
+
         ImGui::PopItemWidth();
     }
     else
     {
-        ImGui::TextColored(ImVec4(1.0f, 0.4f, 0.4f, 1.0f), "No input devices detected");
+        ImGui::TextColored(
+            ImVec4(1.0f,0.4f,0.4f,1.0f),
+            "No input devices detected"
+        );
     }
 
     ImGui::Spacing();
     ImGui::Separator();
     ImGui::Spacing();
 
-    // Input level bar
     ImGui::Text("Input Level");
     ImGui::SameLine();
     ImGui::TextDisabled("(live)");
@@ -421,42 +506,466 @@ void DrawPerformanceTool(ImFont* fontMedium, ImFont* fontLarge)
     ImGui::Spacing();
 
     ImDrawList* dl = ImGui::GetWindowDrawList();
+
     ImVec2 barPos = ImGui::GetCursorScreenPos();
     float barWidth = ImGui::GetContentRegionAvail().x;
-    float barHeight = 12.0f;
+    float barHeight = 8.0f;
 
-    ImU32 bgCol  = ImGui::GetColorU32(ImVec4(0.16f, 0.18f, 0.22f, 1.0f));
-    ImU32 fillLo = ImGui::GetColorU32(ImVec4(0.30f, 0.75f, 1.0f, 1.0f));
-    ImU32 fillHi = ImGui::GetColorU32(ImVec4(1.0f, 0.45f, 0.45f, 1.0f));
+    ImU32 bgCol  = ImGui::GetColorU32(ImVec4(0.16f,0.18f,0.22f,1.0f));
+    ImU32 fillLo = ImGui::GetColorU32(ImVec4(0.30f,0.75f,1.0f,1.0f));
+    ImU32 fillHi = ImGui::GetColorU32(ImVec4(1.0f,0.45f,0.45f,1.0f));
 
-    dl->AddRectFilled(barPos,
-                      ImVec2(barPos.x + barWidth, barPos.y + barHeight),
-                      bgCol, barHeight * 0.5f);
+    dl->AddRectFilled(
+        barPos,
+        ImVec2(barPos.x + barWidth, barPos.y + barHeight),
+        bgCol,
+        barHeight * 0.5f
+    );
 
     float lvl = g_smoothLevel;
-    if (lvl < 0.0f) lvl = 0.0f;
-    if (lvl > 1.0f) lvl = 1.0f;
+    lvl = lvl < 0 ? 0 : (lvl > 1 ? 1 : lvl);
 
     float filled = barWidth * lvl;
     ImU32 fillCol = (lvl < 0.7f) ? fillLo : fillHi;
 
-    dl->AddRectFilled(barPos,
-                      ImVec2(barPos.x + filled, barPos.y + barHeight),
-                      fillCol, barHeight * 0.5f);
+    dl->AddRectFilled(
+        barPos,
+        ImVec2(barPos.x + filled, barPos.y + barHeight),
+        fillCol,
+        barHeight * 0.5f
+    );
 
-    ImGui::Dummy(ImVec2(barWidth, barHeight + 6.0f));
+    ImGui::Dummy(ImVec2(barWidth, barHeight + 8));
 
     ImGui::Spacing();
 
-    // Wave visualizer
-    DrawWavyMicVisualizer(g_smoothLevel, barWidth, 48.0f);
+    DrawWavyMicVisualizer(g_smoothLevel, barWidth, 60.0f);
 
     ImGui::PopFont();
+
     ImGui::EndChild();
+    ImGui::PopStyleColor();
     ImGui::PopStyleVar();
+
+    ImGui::EndGroup();
 
     ImGui::End();
     ImGui::PopStyleVar(3);
+}
+
+bool UIChanged = false;
+#define TRACK(x) if (x) UIChanged = true;
+
+void SaveCharacterJSON() {
+    json j;
+
+    j["proportions"] = {
+        {"head_to_body", CG.headToBody},
+        {"body_type", CG.bodyType},
+        {"height_class", CG.heightClass}
+    };
+
+    j["face"] = {
+        {"eye_size", CG.eyeSize},
+        {"eye_angle", CG.eyeAngle},
+        {"chin_sharpness", CG.chinSharpness},
+        {"brow_angle", CG.browAngle},
+        {"blush", CG.blush}
+    };
+
+    j["colors"] = {
+        {"hair_main", {CG.hairMain.x, CG.hairMain.y, CG.hairMain.z}},
+        {"hair_accent", {CG.hairAccent.x, CG.hairAccent.y, CG.hairAccent.z}},
+        {"eye", {CG.eyeColor.x, CG.eyeColor.y, CG.eyeColor.z}},
+        {"skin", {CG.skinColor.x, CG.skinColor.y, CG.skinColor.z}}
+    };
+
+    j["style"] = {
+        {"art_style", CG.artStyle},
+        {"line_weight", CG.lineWeight},
+        {"color_style", CG.colorStyle}
+    };
+
+    j["hair"] = {
+        {"base_style", CG.baseStyle},
+        {"bangs", CG.bangs}
+    };
+
+    j["outfit"] = {
+        {"type", CG.outfit},
+        {"detail", CG.detailLevel},
+        {"palette", CG.paletteMood}
+    };
+
+    j["personality"] = {
+        {"vibe", CG.vibe},
+        {"expression", CG.expression}
+    };
+
+    std::ofstream file("corsprite_generation.json");
+    if (file.is_open()) file << j.dump(4);
+}
+
+void LoadCharacterJSON() {
+    std::ifstream file("corsprite_generation.json");
+    if (!file.is_open()) return;
+
+    json j;
+    file >> j;
+
+    CG.headToBody = j["proportions"]["head_to_body"];
+    CG.bodyType = j["proportions"]["body_type"];
+    CG.heightClass = j["proportions"]["height_class"];
+
+    CG.eyeSize = j["face"]["eye_size"];
+    CG.eyeAngle = j["face"]["eye_angle"];
+    CG.chinSharpness = j["face"]["chin_sharpness"];
+    CG.browAngle = j["face"]["brow_angle"];
+    CG.blush = j["face"]["blush"];
+
+    auto hm = j["colors"]["hair_main"];
+    CG.hairMain = ImVec4(hm[0], hm[1], hm[2], 1.0f);
+
+    auto ha = j["colors"]["hair_accent"];
+    CG.hairAccent = ImVec4(ha[0], ha[1], ha[2], 1.0f);
+
+    auto ec = j["colors"]["eye"];
+    CG.eyeColor = ImVec4(ec[0], ec[1], ec[2], 1.0f);
+
+    auto sc = j["colors"]["skin"];
+    CG.skinColor = ImVec4(sc[0], sc[1], sc[2], 1.0f);
+
+    CG.artStyle = j["style"]["art_style"];
+    CG.lineWeight = j["style"]["line_weight"];
+    CG.colorStyle = j["style"]["color_style"];
+
+    CG.baseStyle = j["hair"]["base_style"];
+    CG.bangs = j["hair"]["bangs"];
+
+    CG.outfit = j["outfit"]["type"];
+    CG.detailLevel = j["outfit"]["detail"];
+    CG.paletteMood = j["outfit"]["palette"];
+
+    CG.vibe = j["personality"]["vibe"];
+    CG.expression = j["personality"]["expression"];
+}
+
+void InitCharacterSystem() {
+    LoadCharacterJSON();
+}
+
+bool CorspriteSliderFloat(const char* label, float* v, float v_min, float v_max, float width = 200.0f)
+{
+    ImGui::PushID(label);
+
+    ImGui::Columns(2, nullptr, false);
+    ImGui::SetColumnWidth(0, 140);
+    ImGui::TextUnformatted(label);
+    ImGui::NextColumn();
+
+    ImGui::PushItemWidth(width);
+
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 6.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_GrabRounding, 6.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(4, 6));
+
+    ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.12f, 0.12f, 0.14f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_SliderGrab, ImVec4(0.40f, 0.60f, 1.0f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_SliderGrabActive, ImVec4(0.50f, 0.70f, 1.0f, 1.0f));
+
+    bool changed = ImGui::SliderFloat("##slider", v, v_min, v_max);
+
+    ImGui::PopStyleColor(3);
+    ImGui::PopStyleVar(3);
+
+    ImGui::PopItemWidth();
+    ImGui::Columns(1);
+
+    ImGui::PopID();
+    return changed;
+}
+
+bool CorspriteSliderInt(const char* label, int* v, int v_min, int v_max, float width = 200.0f)
+{
+    ImGui::PushID(label);
+
+    ImGui::Columns(2, nullptr, false);
+    ImGui::SetColumnWidth(0, 140);
+    ImGui::TextUnformatted(label);
+    ImGui::NextColumn();
+
+    ImGui::PushItemWidth(width);
+
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 6.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_GrabRounding, 6.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(4, 6));
+
+    ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.12f, 0.12f, 0.14f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_SliderGrab, ImVec4(0.40f, 0.60f, 1.0f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_SliderGrabActive, ImVec4(0.50f, 0.70f, 1.0f, 1.0f));
+
+    bool changed = ImGui::SliderInt("##slider", v, v_min, v_max);
+
+    ImGui::PopStyleColor(3);
+    ImGui::PopStyleVar(3);
+
+    ImGui::PopItemWidth();
+    ImGui::Columns(1);
+
+    ImGui::PopID();
+    return changed;
+}
+
+void CorspriteCharacterWidget(ImFont* fontMedium, ImFont* fontLarge)
+{
+    ImGuiIO& io = ImGui::GetIO();
+
+    const float widgetX = io.DisplaySize.x - 400.0f - 20.0f;
+    const float widgetWidth = 400.0f;
+    const float widgetHeight = io.DisplaySize.y - 480.0f;
+
+    ImGui::SetNextWindowPos(ImVec2(widgetX, io.DisplaySize.y - 620.0f));
+    ImGui::SetNextWindowSize(ImVec2(widgetWidth, widgetHeight));
+
+    ImGui::PushFont(fontMedium);
+
+    ImGui::Begin("##CharacterGen", nullptr,
+        ImGuiWindowFlags_NoResize |
+        ImGuiWindowFlags_NoMove |
+        ImGuiWindowFlags_NoCollapse |
+        ImGuiWindowFlags_NoTitleBar);
+
+    ImGui::PushFont(fontLarge);
+    ImGui::Text("CORSPRITE Character");
+    ImGui::PopFont();
+
+    bool changed = false;
+
+    ImGui::Spacing();
+    ImGui::SeparatorText("Proportions");
+
+    TRACK(CorspriteSliderInt("Head:Body", &CG.headToBody, 0, 3));
+    TRACK(CorspriteSliderInt("Body Type", &CG.bodyType, 0, 3));
+    TRACK(CorspriteSliderInt("Height", &CG.heightClass, 0, 2));
+
+    ImGui::Spacing();
+    ImGui::SeparatorText("Face");
+
+    TRACK(CorspriteSliderFloat("Eye Size", &CG.eyeSize, 0.0f, 1.0f));
+    TRACK(CorspriteSliderFloat("Eye Angle", &CG.eyeAngle, -1.0f, 1.0f));
+    TRACK(CorspriteSliderFloat("Chin Sharpness", &CG.chinSharpness, 0.0f, 1.0f));
+    TRACK(CorspriteSliderFloat("Brow Angle", &CG.browAngle, -1.0f, 1.0f));
+    TRACK(CorspriteSliderFloat("Blush", &CG.blush, 0.0f, 1.0f));
+
+    TRACK(ImGui::ColorEdit4("Eye Color", (float*)&CG.eyeColor));
+    TRACK(ImGui::ColorEdit4("Skin Color", (float*)&CG.skinColor));
+
+    ImGui::Spacing();
+    ImGui::SeparatorText("Hair");
+
+    TRACK(CorspriteSliderInt("Base Style", &CG.baseStyle, 0, 5));
+    TRACK(CorspriteSliderInt("Bangs", &CG.bangs, 0, 3));
+    TRACK(ImGui::ColorEdit4("Main Hair", (float*)&CG.hairMain));
+    TRACK(ImGui::ColorEdit4("Accent Hair", (float*)&CG.hairAccent));
+
+    ImGui::Spacing();
+    ImGui::SeparatorText("Style");
+
+    TRACK(CorspriteSliderInt("Art Style", &CG.artStyle, 0, 4));
+    TRACK(CorspriteSliderInt("Line Weight", &CG.lineWeight, 0, 2));
+    TRACK(CorspriteSliderInt("Color Style", &CG.colorStyle, 0, 3));
+
+    ImGui::Spacing();
+    ImGui::SeparatorText("Outfit");
+
+    TRACK(CorspriteSliderInt("Outfit Type", &CG.outfit, 0, 5));
+    TRACK(CorspriteSliderInt("Detail Level", &CG.detailLevel, 0, 2));
+    TRACK(CorspriteSliderInt("Palette Mood", &CG.paletteMood, 0, 3));
+
+    ImGui::Spacing();
+    ImGui::SeparatorText("Personality");
+
+    TRACK(CorspriteSliderInt("Vibe", &CG.vibe, 0, 5));
+    TRACK(CorspriteSliderInt("Expression", &CG.expression, 0, 4));
+
+    if (changed) SaveCharacterJSON();
+
+    ImGui::End();
+    ImGui::PopFont();
+}
+
+void CorspriteBottomCarousel(ImFont* fontMedium)
+{
+    ImGuiIO& io = ImGui::GetIO();
+
+    const float leftMargin  = 480.0f;
+    const float rightMargin = 540.0f;
+
+    const float elementHeight = 80.0f;
+    const float barHeight     = elementHeight + 6.0f;
+    const float barWidth      = io.DisplaySize.x - (leftMargin + rightMargin);
+    const float barX          = leftMargin;
+    const float barY          = io.DisplaySize.y - barHeight - 20.0f;
+
+    const float squareSize = 40.0f;
+
+    // DATA
+    static const char* labels[10] =
+    {
+        "Skin","Hair","Eyes","Lips","Brows",
+        "Top","Bottom","Shoes","Accessory","Accent"
+    };
+
+    static ImVec4 colors[10] =
+    {
+        {0.90f,0.75f,0.60f,1.0f},
+        {0.20f,0.10f,0.05f,1.0f},
+        {0.15f,0.30f,0.80f,1.0f},
+        {0.80f,0.20f,0.35f,1.0f},
+        {0.10f,0.05f,0.02f,1.0f},
+        {0.30f,0.50f,0.90f,1.0f},
+        {0.20f,0.60f,0.30f,1.0f},
+        {0.10f,0.10f,0.10f,1.0f},
+        {0.90f,0.80f,0.10f,1.0f},
+        {0.80f,0.40f,0.10f,1.0f}
+    };
+
+    // WINDOW
+    ImGui::SetNextWindowPos({barX, barY});
+    ImGui::SetNextWindowSize({barWidth, barHeight});
+
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, {0.05f,0.05f,0.05f,0.55f});
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 10.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, {10,0});
+
+    ImGui::PushFont(fontMedium);
+
+    ImGui::Begin("##BottomColorCarousel", nullptr,
+        ImGuiWindowFlags_NoResize |
+        ImGuiWindowFlags_NoMove |
+        ImGuiWindowFlags_NoCollapse |
+        ImGuiWindowFlags_NoTitleBar);
+
+    // SCROLLBAR STYLE
+    ImGui::PushStyleVar(ImGuiStyleVar_ScrollbarSize, 0);
+    ImGui::PushStyleVar(ImGuiStyleVar_ScrollbarRounding, 0);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, {0,0});
+
+    ImGui::BeginChild("##BottomScroll",
+    {barWidth, barHeight},
+    false,
+    ImGuiWindowFlags_AlwaysHorizontalScrollbar |
+    ImGuiWindowFlags_NoScrollbar);
+    ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 14.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, {30,0});
+
+    ImDrawList* dl = ImGui::GetWindowDrawList();
+
+    for (int i = 0; i < 10; i++)
+    {
+        ImGui::BeginGroup();
+
+        float startX = ImGui::GetCursorPosX();
+        float startY = ImGui::GetCursorPosY();
+
+        float totalHeight = squareSize + 22.0f;
+        float offsetY = (elementHeight - totalHeight) * 0.5f;
+
+        ImGui::SetCursorPosY(startY + offsetY);
+
+        // Clamp hover color
+        ImVec4 hoverColor =
+        {
+            std::min(colors[i].x + 0.15f, 1.0f),
+            std::min(colors[i].y + 0.15f, 1.0f),
+            std::min(colors[i].z + 0.15f, 1.0f),
+            1.0f
+        };
+
+        // ID buffers (no allocations)
+        char btnID[32];
+        char popupID[32];
+        char pickerID[32];
+
+        sprintf(btnID,   "##color%d", i);
+        sprintf(popupID, "ColorPopup%d", i);
+        sprintf(pickerID,"##picker%d", i);
+
+        ImGui::PushStyleColor(ImGuiCol_Button, colors[i]);
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, hoverColor);
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, colors[i]);
+
+        bool clicked = ImGui::Button(btnID, {squareSize, squareSize});
+        bool hovered = ImGui::IsItemHovered();
+
+        ImGui::PopStyleColor(3);
+
+        if (clicked)
+            ImGui::OpenPopup(popupID);
+
+        // DRAW OUTLINE
+        ImVec2 pMin = ImGui::GetItemRectMin();
+        ImVec2 pMax = ImGui::GetItemRectMax();
+
+        float glow = hovered ? 200.0f : 70.0f;
+        float thickness = hovered ? 2.8f : 1.3f;
+
+        dl->AddRect(
+            {pMin.x-2,pMin.y-2},
+            {pMax.x+2,pMax.y+2},
+            IM_COL32(255,255,255,(int)glow),
+            6.0f,
+            0,
+            thickness
+        );
+
+        // LABEL
+        float textWidth = ImGui::CalcTextSize(labels[i]).x;
+
+        ImGui::SetCursorPosX(startX + squareSize*0.5f - textWidth*0.5f);
+        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 6);
+
+        ImGui::TextUnformatted(labels[i]);
+
+        // POPUP POSITION
+        ImVec2 popupPos(pMin.x, pMin.y - 310.0f);
+        ImGui::SetNextWindowPos(popupPos);
+
+        if (ImGui::BeginPopup(popupID))
+        {
+            ImGui::SetNextItemWidth(260);
+
+            ImGui::ColorPicker4(
+                pickerID,
+                (float*)&colors[i],
+                ImGuiColorEditFlags_NoSidePreview |
+                ImGuiColorEditFlags_NoSmallPreview |
+                ImGuiColorEditFlags_DisplayRGB |
+                ImGuiColorEditFlags_DisplayHex |
+                ImGuiColorEditFlags_PickerHueWheel
+            );
+
+            ImGui::EndPopup();
+        }
+
+        ImGui::EndGroup();
+
+        if (i < 9)
+            ImGui::SameLine();
+    }
+
+    ImGui::PopStyleVar(); // ItemSpacing
+
+    ImGui::EndChild();
+
+    ImGui::PopStyleVar(3); // Scrollbar vars
+
+    ImGui::End();
+
+    ImGui::PopFont();
+
+    ImGui::PopStyleVar(2);
+    ImGui::PopStyleColor();
 }
 
 void OpenURL(const char* url) {
@@ -545,7 +1054,6 @@ bool ToggleSwitch(const char* id, bool* v, ImVec4 onColor, ImVec4 offColor, ImVe
         // Convert packed ImU32 → float RGBA
         ImVec4 col = ImGui::ColorConvertU32ToFloat4(bg);
 
-        // SAFE manual clamp (no min/max macros)
         col.x = col.x + 0.05f;
         if (col.x > 1.0f) col.x = 1.0f;
 
@@ -555,7 +1063,7 @@ bool ToggleSwitch(const char* id, bool* v, ImVec4 onColor, ImVec4 offColor, ImVe
         col.z = col.z + 0.05f;
         if (col.z > 1.0f) col.z = 1.0f;
 
-        // Convert back to ImU32
+        // Convert back to ImU32 like why not
         bg = ImGui::GetColorU32(col);
 
         ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
@@ -661,9 +1169,6 @@ void InputRow(const char* id, const char* label, const char* subtext, char* buff
 
     ImGui::Spacing();
 
-    // -----------------------------
-    // INPUT FIELD STYLE
-    // -----------------------------
     ImVec4 bg        = ImVec4(0.14f, 0.14f, 0.14f, 1.0f);
     ImVec4 bgHover   = ImVec4(0.18f, 0.18f, 0.18f, 1.0f);
     ImVec4 bgActive  = ImVec4(0.22f, 0.22f, 0.22f, 1.0f);
@@ -1264,26 +1769,18 @@ int main()
         {
             json config;
 
-            // -----------------------------
-            // ASSISTANT — CORE SETTINGS
-            // -----------------------------
+            // Json structure 3
             config["assistant"]["enable"]          = enableAssistant;
             config["assistant"]["always_on_top"]   = alwaysOnTop;
             config["assistant"]["notifications"]   = showNotifications;
             config["assistant"]["auto_save"]       = autoSaveConfig;
 
-            // -----------------------------
-            // INTERACTION & BEHAVIOR
-            // -----------------------------
             config["assistant"]["interactive_mode"] = interactiveMode;
             config["assistant"]["follow_cursor"]    = followCursor;
             config["assistant"]["idle_animations"]  = idleAnimations;
             config["assistant"]["language"]               = languageIndex;
             config["assistant"]["username"]               = std::string(username);
 
-            // -----------------------------
-            // INDICATOR SETTINGS
-            // -----------------------------
             config["indicator"]["color"] = {
                 circleColor.x,
                 circleColor.y,
@@ -1292,9 +1789,7 @@ int main()
 
             config["indicator"]["radius"] = radius;
 
-            // -----------------------------
             // SAVE TO FILE
-            // -----------------------------
             std::ofstream file("assistant_config.json");
             if (file.is_open())
             {
@@ -1365,6 +1860,10 @@ int main()
 
         
         DrawPerformanceTool(fontMedium, fontLarge);
+        CorspriteCharacterWidget(fontMedium, fontLarge);
+        CorspriteBottomCarousel(fontMedium);
+
+
         // --- DRAW CIRCLE (STATUS DOT) ---
         ImVec2 center(
             io.DisplaySize.x - radius - 10.0f,
