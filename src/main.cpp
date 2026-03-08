@@ -73,9 +73,7 @@ struct CharacterGen {
 
 CharacterGen CG;
 
-// FPS / RAM
-static float fpsHistory[120] = {0};
-static int   fpsIndex        = 0;
+
 static float fpsAccum        = 0.0f;
 static int   fpsCount        = 0;
 
@@ -89,7 +87,7 @@ void UpdateHardwareStats()
 
 // Microphone
 static std::vector<std::string> micDevices;
-static int   selectedMic   = 0;
+static size_t selectedMic  = 0;
 static float micLevel      = 0.0f;
 
 static HWAVEIN   g_waveIn  = nullptr;
@@ -178,10 +176,10 @@ bool RefreshMicrophones()
 
     micDevices = newList;
 
-    if (selectedMic >= (int)micDevices.size())
+    if (selectedMic >= micDevices.size())
     {
         CloseMic();
-        selectedMic = micDevices.empty() ? 0 : 0;
+        selectedMic = 0;
     }
 
     return true;
@@ -232,8 +230,8 @@ void AutoSelectMicOnStart()
         return;
     }
 
-    // If no mic selected yet, auto‑select the first one
-    if (selectedMic < 0 || selectedMic >= (int)micDevices.size())
+    // If selected mic is invalid, auto-select the first one
+    if (selectedMic >= micDevices.size())
     {
         selectedMic = 0;
         StartMic(selectedMic);
@@ -259,8 +257,6 @@ static ImVec4 LerpColor(const ImVec4& a, const ImVec4& b, float t)
         a.w + (b.w - a.w) * t
     );
 }
-
-
 
 void DrawWavyMicVisualizer(float level, float width, float height)
 {
@@ -310,15 +306,14 @@ void DrawWavyMicVisualizer(float level, float width, float height)
 void DrawPerformanceTool(ImFont* fontMedium, ImFont* fontLarge)
 {
     ImGuiIO& io = ImGui::GetIO();
+
     RefreshMicrophones();
     UpdateMicLevel();
+    UpdateHardwareStats();
 
     float fps = io.Framerate;
     fpsAccum += fps;
     fpsCount++;
-
-    fpsHistory[fpsIndex] = fps;
-    fpsIndex = (fpsIndex + 1) % 120;
 
     float avgFPS = fpsAccum / (fpsCount > 0 ? fpsCount : 1);
     if (fpsCount >= 240)
@@ -327,230 +322,148 @@ void DrawPerformanceTool(ImFont* fontMedium, ImFont* fontLarge)
         fpsCount = 1;
     }
 
-    UpdateHardwareStats();
     const double gb = 1024.0 * 1024.0 * 1024.0;
 
-    ImGuiWindowFlags flags =
+    ImVec2 overlaySize(600, 240);
+    ImVec2 overlayPos(io.DisplaySize.x - overlaySize.x - 30, 30);
+
+    ImGui::SetNextWindowPos(overlayPos, ImGuiCond_Always);
+    ImGui::SetNextWindowSize(overlaySize, ImGuiCond_Always);
+    ImGui::SetNextWindowBgAlpha(0.0f);
+
+    ImGui::Begin("##input_overlay", nullptr,
         ImGuiWindowFlags_NoDecoration |
         ImGuiWindowFlags_NoMove |
         ImGuiWindowFlags_NoSavedSettings |
-        ImGuiWindowFlags_NoFocusOnAppearing |
-        ImGuiWindowFlags_NoNav;
+        ImGuiWindowFlags_NoBackground);
 
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 20.0f);
-    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 12.0f);
-    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(14, 12));
+    ImVec4 cardBg = ImVec4(0,0,0,0);
+    ImVec4 border = ImVec4(0.25f,0.27f,0.30f,0.35f);
+    ImVec4 muted  = ImVec4(0.65f,0.70f,0.75f,1.0f);
 
-    // Bigger window
-    ImVec2 size(900, 440);
-    ImVec2 pos(io.DisplaySize.x - size.x - 20, 20);
+    float totalWidth = ImGui::GetContentRegionAvail().x;
+    float controlWidth = totalWidth * 0.45f;
+    float previewWidth = totalWidth - controlWidth - 12; // spacing
 
-    ImGui::SetNextWindowPos(pos, ImGuiCond_Always);
-    ImGui::SetNextWindowSize(size, ImGuiCond_Always);
-    ImGui::SetNextWindowBgAlpha(0);
-
-    ImGui::Begin("PerfTool", nullptr, flags);
+    ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 12);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0,0));
+    ImGui::PushStyleColor(ImGuiCol_ChildBg, cardBg);
+    ImGui::PushStyleColor(ImGuiCol_Border, border);
+    ImGui::BeginChild("mic_card", ImVec2(0,200), true);
+    ImGui::PopStyleVar(2);
+    ImGui::PopStyleColor(2);
 
     ImGui::BeginGroup();
-
-    ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 14.0f);
-    ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0,0,0,0.35f));
-
-    ImGui::BeginChild("##perf_card", ImVec2(size.x * 0.53f, 0), true);
-    ImGui::PushFont(fontLarge);
-    ImGui::Text("Corsprite Launcher");
-    ImGui::PopFont();
-    ImGui::PushFont(fontMedium);
-
-    ImGui::Text("FPS: %.1f", avgFPS);
-    ImGui::SameLine();
-    ImGui::Text(
-        "RAM: %.2f / %.2f GB",
-        (memInfo.ullTotalPhys - memInfo.ullAvailPhys) / gb,
-        memInfo.ullTotalPhys / gb
-    );
-    ImGui::TextWrapped(
-        "Simple way to Run Corsprite server and client on the same device with live "
-        "performance metrics and real-time control of microphone, speakers, "
-        "camera, and screen capture."
-    );ImGuiTableFlags tflags =
-    ImGuiTableFlags_BordersInnerV |
-    ImGuiTableFlags_RowBg |
-    ImGuiTableFlags_SizingStretchProp |
-    ImGuiTableFlags_NoSavedSettings;
-
-    if (ImGui::BeginTable("##limits", 2, tflags, ImVec2(ImGui::GetContentRegionAvail().x * 0.95f, 0)))
     {
-        ImGui::TableSetupColumn("Feature", ImGuiTableColumnFlags_WidthFixed, 110.0f);
-        ImGui::TableSetupColumn("Details");
-        ImGui::TableHeadersRow();
+        ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 12);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(10,10));
+        ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0,0,0,0));
+        ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0,0,0,0));
 
-        // Platform
-        ImGui::TableNextRow();
-        ImGui::TableNextColumn();
-        ImGui::Text("Platform");
-        ImGui::TableNextColumn();
-        ImGui::Text("Windows (x64)");
+        ImGui::BeginChild("controls", ImVec2(controlWidth,140), false);
+        ImGui::PopStyleColor(2);
+        ImGui::PopStyleVar(2);
+        
+        ImGui::Spacing();
+        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 10);
+        ImGui::PushFont(fontLarge);
+        ImGui::Text("Device I/O");
+        ImGui::PopFont();
 
-        // Device load
-        ImGui::TableNextRow();
-        ImGui::TableNextColumn();
-        ImGui::Text("Device Load");
-        ImGui::TableNextColumn();
-        ImGui::TextWrapped("Running server and client together may increase CPU usage.");
 
-        // Minimum specs
-        ImGui::TableNextRow();
-        ImGui::TableNextColumn();
-        ImGui::Text("Minimum");
-        ImGui::TableNextColumn();
-        ImGui::TextWrapped("Windows 11 • 16 GB RAM • Quad-core CPU • GPU with 2 GB VRAM recommended.");
+        bool connected = g_micOpen;
+        ImVec4 statusColor = connected ? ImVec4(0.12f,0.45f,0.28f,1.0f) : ImVec4(0.55f,0.18f,0.18f,1.0f);
+        const char* statusText = connected ? "Connected" : "Idle";
 
-        ImGui::EndTable();
-    }
+        ImVec2 textSize = ImGui::CalcTextSize(statusText);
+        ImVec2 badgeSize(textSize.x + 24, textSize.y + 18);
 
-    ImGui::PopFont();
-
-    ImGui::EndChild();
-    ImGui::PopStyleColor();
-    ImGui::PopStyleVar();
-    ImGui::EndGroup();
-
-    ImGui::SameLine();
-
-    // MIC
-    ImGui::BeginGroup();
-
-    ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 14.0f);
-    ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0,0,0,0.35f));
-
-    ImGui::BeginChild("##mic_card", ImVec2(size.x * 0.40f, 0), true);
-
-    ImGui::PushFont(fontMedium);
-
-    ImVec2 start = ImGui::GetCursorScreenPos();
-    float fullWidth = ImGui::GetContentRegionAvail().x;
-
-    ImGui::Text("User Voice Input");
-
-    ImVec4 statusColor = g_micOpen? ImVec4(0.12f, 0.55f, 0.28f, 1.0f) : ImVec4(0.60f, 0.18f, 0.18f, 1.0f);
-
-    const char* statusText = g_micOpen ? "Connected" : "Idle";
-
-    ImVec2 pillSize = ImGui::CalcTextSize(statusText);
-    pillSize.x += 24;
-    pillSize.y += 14;
-
-    float pillX = start.x + fullWidth - pillSize.x;
-    float pillY = start.y - 6;
-
-    ImGui::SetCursorScreenPos(ImVec2(pillX, pillY));
-
-    ImGui::PushStyleColor(ImGuiCol_Button, statusColor);
-    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, statusColor);
-    ImGui::PushStyleColor(ImGuiCol_ButtonActive, statusColor);
-    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, pillSize.y * 0.5f);
-
-    ImGui::Button(statusText, pillSize);
-
-    ImGui::PopStyleVar();
-    ImGui::PopStyleColor(3);
-
-    ImGui::SetCursorScreenPos(ImVec2(start.x, start.y + pillSize.y + 12));
-
-    ImGui::Spacing();
-
-    if (!micDevices.empty())
-    {
-        const char* current = micDevices[selectedMic].c_str();
-
-        ImGui::PushItemWidth(-1);
-
-        if (ImGui::BeginCombo("##miccombo", current))
+        ImGui::SameLine(controlWidth - badgeSize.x);
+        ImGui::PushStyleColor(ImGuiCol_Button, statusColor);
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, statusColor);
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, statusColor);
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 20);
+        ImGui::Button(statusText, badgeSize);
+        ImGui::PopStyleVar();
+        ImGui::PopStyleColor(3);
+        ImGui::PushFont(fontMedium);
+        ImGui::PushStyleColor(ImGuiCol_Text, muted);
+        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 10);
+        ImGui::Text("Mic Input for CORSPRITE");
+        ImGui::PopStyleColor();
+        ImGui::PopFont();
+        ImGui::PushFont(fontMedium);
+        if (!micDevices.empty())
         {
-            for (int i = 0; i < (int)micDevices.size(); i++)
+            const char* current = micDevices[selectedMic].c_str();
+            ImGui::PushItemWidth(-1);
+            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 10);
+            if (ImGui::BeginCombo("##mic_device_combo", current))
             {
-                bool sel = (i == selectedMic);
-
-                if (ImGui::Selectable(micDevices[i].c_str(), sel))
+                for (size_t i = 0; i < micDevices.size(); ++i)
                 {
-                    selectedMic = i;
-                    StartMic(i);
+                    bool selected = (i == selectedMic);
+                    if (ImGui::Selectable(micDevices[i].c_str(), selected))
+                    {
+                        selectedMic = i;
+                        StartMic(i);
+                    }
+                    if (selected)
+                        ImGui::SetItemDefaultFocus();
                 }
-
-                if (sel)
-                    ImGui::SetItemDefaultFocus();
+                ImGui::EndCombo();
             }
-
-            ImGui::EndCombo();
+            ImGui::PopItemWidth();
         }
-
-        ImGui::PopItemWidth();
+        else
+        {
+            ImGui::TextColored(ImVec4(1,0.4f,0.4f,1),
+                "No microphone devices detected");
+        }
+        ImGui::PopFont();
+        
+        ImGui::EndChild();
     }
-    else
-    {
-        ImGui::TextColored(
-            ImVec4(1.0f,0.4f,0.4f,1.0f),
-            "No input devices detected"
-        );
-    }
-
-    ImGui::Spacing();
-    ImGui::Separator();
-    ImGui::Spacing();
-
-    ImGui::Text("Input Level");
-    ImGui::SameLine();
-    ImGui::TextDisabled("(live)");
-
-    ImGui::Spacing();
-
-    ImDrawList* dl = ImGui::GetWindowDrawList();
-
-    ImVec2 barPos = ImGui::GetCursorScreenPos();
-    float barWidth = ImGui::GetContentRegionAvail().x;
-    float barHeight = 8.0f;
-
-    ImU32 bgCol  = ImGui::GetColorU32(ImVec4(0.16f,0.18f,0.22f,1.0f));
-    ImU32 fillLo = ImGui::GetColorU32(ImVec4(0.30f,0.75f,1.0f,1.0f));
-    ImU32 fillHi = ImGui::GetColorU32(ImVec4(1.0f,0.45f,0.45f,1.0f));
-
-    dl->AddRectFilled(
-        barPos,
-        ImVec2(barPos.x + barWidth, barPos.y + barHeight),
-        bgCol,
-        barHeight * 0.5f
-    );
-
-    float lvl = g_smoothLevel;
-    lvl = lvl < 0 ? 0 : (lvl > 1 ? 1 : lvl);
-
-    float filled = barWidth * lvl;
-    ImU32 fillCol = (lvl < 0.7f) ? fillLo : fillHi;
-
-    dl->AddRectFilled(
-        barPos,
-        ImVec2(barPos.x + filled, barPos.y + barHeight),
-        fillCol,
-        barHeight * 0.5f
-    );
-
-    ImGui::Dummy(ImVec2(barWidth, barHeight + 8));
-
-    ImGui::Spacing();
-
-    DrawWavyMicVisualizer(g_smoothLevel, barWidth, 60.0f);
-
-    ImGui::PopFont();
-
-    ImGui::EndChild();
-    ImGui::PopStyleColor();
-    ImGui::PopStyleVar();
-
     ImGui::EndGroup();
 
+    ImGui::SameLine();
+
+    ImGui::BeginGroup();
+    {
+        ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0,0,0,0));
+        ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0,0,0,0));
+        ImGui::BeginChild("preview", ImVec2(previewWidth,140), false);
+        ImGui::PopStyleColor(2);
+
+        ImGui::Spacing();
+        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 10);
+        ImGui::PushFont(fontMedium);
+        ImGui::Text("Mic preview:");
+        ImGui::PopFont();
+
+        float barWidth = ImGui::GetContentRegionAvail().x * 0.96;
+        DrawWavyMicVisualizer(g_smoothLevel, barWidth, 40.0f);
+
+        ImGui::PushStyleColor(ImGuiCol_Text, muted);
+        ImGui::Text("FPS %.0f   |   RAM %.2f / %.2f GB",
+            avgFPS,
+            (memInfo.ullTotalPhys - memInfo.ullAvailPhys)/gb,
+            memInfo.ullTotalPhys/gb
+        );
+        ImGui::PopStyleColor();
+
+        ImGui::EndChild();
+    }
+    ImGui::EndGroup();
+    
+    ImGui::PushFont(fontMedium);
+    ImGui::PushStyleColor(ImGuiCol_Text, muted);
+    ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 10);
+    ImGui::Text("More advanced option:");
+    ImGui::PopStyleColor();
+    ImGui::PopFont();
+    ImGui::EndChild();
     ImGui::End();
-    ImGui::PopStyleVar(3);
 }
 
 bool UIChanged = false;
@@ -1417,6 +1330,7 @@ int main()
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    // Image for logo
     GLuint myImageLogoTexture = 0;
     int imgWidth = 0, imgHeight = 0;
 
@@ -1434,6 +1348,27 @@ int main()
 
         stbi_image_free(data);
     }
+    
+    // Image for banner
+    GLuint myBannerTexture = 0;
+    int bannerWidth = 0, bannerHeight = 0;
+
+    {
+        int channels;
+        unsigned char* data = stbi_load("images/banner_main.jpg", &bannerWidth, &bannerHeight, &channels, 4);
+
+        glGenTextures(1, &myBannerTexture);
+        glBindTexture(GL_TEXTURE_2D, myBannerTexture);
+
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, bannerWidth, bannerHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        stbi_image_free(data);
+    }
+
+
     
     static bool enableAssistant   = true;
     static bool alwaysOnTop       = true;
@@ -1549,6 +1484,53 @@ int main()
 
         s.Colors[ImGuiCol_Text]             = ImVec4(0.95f, 0.95f, 0.95f, 1.00f);
         s.Colors[ImGuiCol_TextDisabled]     = ImVec4(0.50f, 0.50f, 0.50f, 1.00f);
+        ImGuiIO& io = ImGui::GetIO();
+
+        // FULLSCREEN BANNER WINDOW
+        ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
+        ImGui::SetNextWindowSize(io.DisplaySize, ImGuiCond_Always);
+
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+
+        ImGui::Begin("BannerWindow", nullptr,
+            ImGuiWindowFlags_NoDecoration |
+            ImGuiWindowFlags_NoMove |
+            ImGuiWindowFlags_NoScrollbar |
+            ImGuiWindowFlags_NoScrollWithMouse |
+            ImGuiWindowFlags_NoSavedSettings |
+            ImGuiWindowFlags_NoInputs |
+            ImGuiWindowFlags_NoBackground
+        );
+
+        // Window rectangle
+        ImVec2 p0 = ImGui::GetWindowPos();
+        ImVec2 p1 = ImVec2(p0.x + ImGui::GetWindowSize().x,
+                        p0.y + ImGui::GetWindowSize().y);
+
+        // Draw list
+        ImDrawList* draw = ImGui::GetWindowDrawList();
+
+        // Clip to window
+        draw->PushClipRect(p0, p1, true);
+
+        draw->AddImage(
+            (void*)(intptr_t)myBannerTexture,
+            p0, p1,
+            ImVec2(0, 0), ImVec2(1, 1),
+            IM_COL32(255, 255, 255, 0.3f * 255)
+        );
+
+        // Add black overlay (0.4 = 40% darkness)
+        draw->AddRectFilled(
+            p0, p1,
+            IM_COL32(0, 0, 0, (int)(0.4f * 255))
+        );
+
+
+        draw->PopClipRect();
+
+        ImGui::End();
+        ImGui::PopStyleVar();
 
         ImGui::SetNextWindowPos(ImVec2(20, 20), ImGuiCond_Always);
         ImGui::SetNextWindowSize(ImVec2(360, io.DisplaySize.y - 40), ImGuiCond_Always);
@@ -1559,7 +1541,6 @@ int main()
             ImGuiWindowFlags_NoResize |
             ImGuiWindowFlags_NoScrollbar
         );
-
         // Logo
         ImGui::Image(
             (void*)(intptr_t)myImageLogoTexture,
