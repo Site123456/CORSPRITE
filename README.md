@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <a href="https://corsprite-docs.vercel.app/"><img src="https://img.shields.io/badge/Docs-Beta-blue?style=for-the-badge"></a>
+  <a href="https://docs.corsprite.com/"><img src="https://img.shields.io/badge/Docs-Beta-blue?style=for-the-badge"></a>
   <a href="https://www.youtube.com/@CORSPRITE"><img src="https://img.shields.io/badge/YouTube-Updates-red?style=for-the-badge"></a>
   <img src="https://img.shields.io/badge/Platform-Windows%2011%20x64-00adef?style=for-the-badge">
   <img src="https://img.shields.io/badge/Status-Alpha-orange?style=for-the-badge">
@@ -34,7 +34,8 @@
 
 ## 📘 Documentation
 
-- Docs: https://corsprite-docs.vercel.app/  
+- Installation: https://corsprite.com/  
+- Docs: https://docs.corsprite.com/  
 - Dev updates: https://www.youtube.com/@CORSPRITE
 
 **Built with**
@@ -179,6 +180,7 @@ CORSPRITE includes an **automatic audio device detection system** designed to ma
 
 Contribution guidelines will arrive during **Beta**.  
 Bug reports: https://github.com/Site123456/CORSPRITE/issues
+Bug reports: https://issues.corsprite.com
 
 ---
 

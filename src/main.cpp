@@ -3,6 +3,7 @@
 #include "backends/imgui_impl_opengl3.h"
 
 #define GLFW_EXPOSE_NATIVE_WIN32
+#include <GL/glew.h> 
 #include <GLFW/glfw3.h>
 #include <GLFW/glfw3native.h>
 
@@ -324,7 +325,7 @@ void DrawPerformanceTool(ImFont* fontMedium, ImFont* fontLarge)
 
     const double gb = 1024.0 * 1024.0 * 1024.0;
 
-    ImVec2 overlaySize(600, 240);
+    ImVec2 overlaySize(600, 180);
     ImVec2 overlayPos(io.DisplaySize.x - overlaySize.x - 30, 30);
 
     ImGui::SetNextWindowPos(overlayPos, ImGuiCond_Always);
@@ -349,7 +350,7 @@ void DrawPerformanceTool(ImFont* fontMedium, ImFont* fontLarge)
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0,0));
     ImGui::PushStyleColor(ImGuiCol_ChildBg, cardBg);
     ImGui::PushStyleColor(ImGuiCol_Border, border);
-    ImGui::BeginChild("mic_card", ImVec2(0,200), true);
+    ImGui::BeginChild("mic_card", ImVec2(0,140), true);
     ImGui::PopStyleVar(2);
     ImGui::PopStyleColor(2);
 
@@ -367,13 +368,13 @@ void DrawPerformanceTool(ImFont* fontMedium, ImFont* fontLarge)
         ImGui::Spacing();
         ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 10);
         ImGui::PushFont(fontLarge);
-        ImGui::Text("Device I/O");
+        ImGui::Text("I/O");
         ImGui::PopFont();
 
 
         bool connected = g_micOpen;
         ImVec4 statusColor = connected ? ImVec4(0.12f,0.45f,0.28f,1.0f) : ImVec4(0.55f,0.18f,0.18f,1.0f);
-        const char* statusText = connected ? "Connected" : "Idle";
+        const char* statusText = connected ? "Mic Connected" : "Mic Idle";
 
         ImVec2 textSize = ImGui::CalcTextSize(statusText);
         ImVec2 badgeSize(textSize.x + 24, textSize.y + 18);
@@ -455,116 +456,8 @@ void DrawPerformanceTool(ImFont* fontMedium, ImFont* fontLarge)
         ImGui::EndChild();
     }
     ImGui::EndGroup();
-    
-    ImGui::PushFont(fontMedium);
-    ImGui::PushStyleColor(ImGuiCol_Text, muted);
-    ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 10);
-    ImGui::Text("More advanced option:");
-    ImGui::PopStyleColor();
-    ImGui::PopFont();
     ImGui::EndChild();
     ImGui::End();
-}
-
-bool UIChanged = false;
-#define TRACK(x) if (x) UIChanged = true;
-
-void SaveCharacterJSON() {
-    json j;
-
-    j["proportions"] = {
-        {"head_to_body", CG.headToBody},
-        {"body_type", CG.bodyType},
-        {"height_class", CG.heightClass}
-    };
-
-    j["face"] = {
-        {"eye_size", CG.eyeSize},
-        {"eye_angle", CG.eyeAngle},
-        {"chin_sharpness", CG.chinSharpness},
-        {"brow_angle", CG.browAngle},
-        {"blush", CG.blush}
-    };
-
-    j["colors"] = {
-        {"hair_main", {CG.hairMain.x, CG.hairMain.y, CG.hairMain.z}},
-        {"hair_accent", {CG.hairAccent.x, CG.hairAccent.y, CG.hairAccent.z}},
-        {"eye", {CG.eyeColor.x, CG.eyeColor.y, CG.eyeColor.z}},
-        {"skin", {CG.skinColor.x, CG.skinColor.y, CG.skinColor.z}}
-    };
-
-    j["style"] = {
-        {"art_style", CG.artStyle},
-        {"line_weight", CG.lineWeight},
-        {"color_style", CG.colorStyle}
-    };
-
-    j["hair"] = {
-        {"base_style", CG.baseStyle},
-        {"bangs", CG.bangs}
-    };
-
-    j["outfit"] = {
-        {"type", CG.outfit},
-        {"detail", CG.detailLevel},
-        {"palette", CG.paletteMood}
-    };
-
-    j["personality"] = {
-        {"vibe", CG.vibe},
-        {"expression", CG.expression}
-    };
-
-    std::ofstream file("corsprite_generation.json");
-    if (file.is_open()) file << j.dump(4);
-}
-
-void LoadCharacterJSON() {
-    std::ifstream file("corsprite_generation.json");
-    if (!file.is_open()) return;
-
-    json j;
-    file >> j;
-
-    CG.headToBody = j["proportions"]["head_to_body"];
-    CG.bodyType = j["proportions"]["body_type"];
-    CG.heightClass = j["proportions"]["height_class"];
-
-    CG.eyeSize = j["face"]["eye_size"];
-    CG.eyeAngle = j["face"]["eye_angle"];
-    CG.chinSharpness = j["face"]["chin_sharpness"];
-    CG.browAngle = j["face"]["brow_angle"];
-    CG.blush = j["face"]["blush"];
-
-    auto hm = j["colors"]["hair_main"];
-    CG.hairMain = ImVec4(hm[0], hm[1], hm[2], 1.0f);
-
-    auto ha = j["colors"]["hair_accent"];
-    CG.hairAccent = ImVec4(ha[0], ha[1], ha[2], 1.0f);
-
-    auto ec = j["colors"]["eye"];
-    CG.eyeColor = ImVec4(ec[0], ec[1], ec[2], 1.0f);
-
-    auto sc = j["colors"]["skin"];
-    CG.skinColor = ImVec4(sc[0], sc[1], sc[2], 1.0f);
-
-    CG.artStyle = j["style"]["art_style"];
-    CG.lineWeight = j["style"]["line_weight"];
-    CG.colorStyle = j["style"]["color_style"];
-
-    CG.baseStyle = j["hair"]["base_style"];
-    CG.bangs = j["hair"]["bangs"];
-
-    CG.outfit = j["outfit"]["type"];
-    CG.detailLevel = j["outfit"]["detail"];
-    CG.paletteMood = j["outfit"]["palette"];
-
-    CG.vibe = j["personality"]["vibe"];
-    CG.expression = j["personality"]["expression"];
-}
-
-void InitCharacterSystem() {
-    LoadCharacterJSON();
 }
 
 bool CorspriteSliderFloat(const char* label, float* v, float v_min, float v_max, float width = 200.0f)
@@ -629,90 +522,12 @@ bool CorspriteSliderInt(const char* label, int* v, int v_min, int v_max, float w
     return changed;
 }
 
-void CorspriteCharacterWidget(ImFont* fontMedium, ImFont* fontLarge)
-{
-    ImGuiIO& io = ImGui::GetIO();
-
-    const float widgetX = io.DisplaySize.x - 400.0f - 20.0f;
-    const float widgetWidth = 400.0f;
-    const float widgetHeight = io.DisplaySize.y - 480.0f;
-
-    ImGui::SetNextWindowPos(ImVec2(widgetX, io.DisplaySize.y - 620.0f));
-    ImGui::SetNextWindowSize(ImVec2(widgetWidth, widgetHeight));
-
-    ImGui::PushFont(fontMedium);
-
-    ImGui::Begin("##CharacterGen", nullptr,
-        ImGuiWindowFlags_NoResize |
-        ImGuiWindowFlags_NoMove |
-        ImGuiWindowFlags_NoCollapse |
-        ImGuiWindowFlags_NoTitleBar);
-
-    ImGui::PushFont(fontLarge);
-    ImGui::Text("CORSPRITE Character");
-    ImGui::PopFont();
-
-    bool changed = false;
-
-    ImGui::Spacing();
-    ImGui::SeparatorText("Proportions");
-
-    TRACK(CorspriteSliderInt("Head:Body", &CG.headToBody, 0, 3));
-    TRACK(CorspriteSliderInt("Body Type", &CG.bodyType, 0, 3));
-    TRACK(CorspriteSliderInt("Height", &CG.heightClass, 0, 2));
-
-    ImGui::Spacing();
-    ImGui::SeparatorText("Face");
-
-    TRACK(CorspriteSliderFloat("Eye Size", &CG.eyeSize, 0.0f, 1.0f));
-    TRACK(CorspriteSliderFloat("Eye Angle", &CG.eyeAngle, -1.0f, 1.0f));
-    TRACK(CorspriteSliderFloat("Chin Sharpness", &CG.chinSharpness, 0.0f, 1.0f));
-    TRACK(CorspriteSliderFloat("Brow Angle", &CG.browAngle, -1.0f, 1.0f));
-    TRACK(CorspriteSliderFloat("Blush", &CG.blush, 0.0f, 1.0f));
-
-    TRACK(ImGui::ColorEdit4("Eye Color", (float*)&CG.eyeColor));
-    TRACK(ImGui::ColorEdit4("Skin Color", (float*)&CG.skinColor));
-
-    ImGui::Spacing();
-    ImGui::SeparatorText("Hair");
-
-    TRACK(CorspriteSliderInt("Base Style", &CG.baseStyle, 0, 5));
-    TRACK(CorspriteSliderInt("Bangs", &CG.bangs, 0, 3));
-    TRACK(ImGui::ColorEdit4("Main Hair", (float*)&CG.hairMain));
-    TRACK(ImGui::ColorEdit4("Accent Hair", (float*)&CG.hairAccent));
-
-    ImGui::Spacing();
-    ImGui::SeparatorText("Style");
-
-    TRACK(CorspriteSliderInt("Art Style", &CG.artStyle, 0, 4));
-    TRACK(CorspriteSliderInt("Line Weight", &CG.lineWeight, 0, 2));
-    TRACK(CorspriteSliderInt("Color Style", &CG.colorStyle, 0, 3));
-
-    ImGui::Spacing();
-    ImGui::SeparatorText("Outfit");
-
-    TRACK(CorspriteSliderInt("Outfit Type", &CG.outfit, 0, 5));
-    TRACK(CorspriteSliderInt("Detail Level", &CG.detailLevel, 0, 2));
-    TRACK(CorspriteSliderInt("Palette Mood", &CG.paletteMood, 0, 3));
-
-    ImGui::Spacing();
-    ImGui::SeparatorText("Personality");
-
-    TRACK(CorspriteSliderInt("Vibe", &CG.vibe, 0, 5));
-    TRACK(CorspriteSliderInt("Expression", &CG.expression, 0, 4));
-
-    if (changed) SaveCharacterJSON();
-
-    ImGui::End();
-    ImGui::PopFont();
-}
-
 void CorspriteBottomCarousel(ImFont* fontMedium)
 {
     ImGuiIO& io = ImGui::GetIO();
 
-    const float leftMargin  = 480.0f;
-    const float rightMargin = 540.0f;
+    const float leftMargin  = 400.0f;
+    const float rightMargin = 620.0f;
 
     const float elementHeight = 80.0f;
     const float barHeight     = elementHeight + 6.0f;
@@ -1268,6 +1083,8 @@ int main()
         return -1;
 
     glfwMakeContextCurrent(window);
+    
+    glewInit();
     glfwSwapInterval(1);
 
     // Win32 handle
@@ -1330,6 +1147,7 @@ int main()
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
     // Image for logo
     GLuint myImageLogoTexture = 0;
     int imgWidth = 0, imgHeight = 0;
@@ -1348,28 +1166,36 @@ int main()
 
         stbi_image_free(data);
     }
-    
-    // Image for banner
     GLuint myBannerTexture = 0;
     int bannerWidth = 0, bannerHeight = 0;
 
     {
         int channels;
-        unsigned char* data = stbi_load("images/banner_main.jpg", &bannerWidth, &bannerHeight, &channels, 4);
+        unsigned char* data = stbi_load("images/banner.jpg",
+                                        &bannerWidth, &bannerHeight,
+                                        &channels, 4);
+
+        if (!data) {
+            printf("Failed to load images/banner.jpg\n");
+        }
 
         glGenTextures(1, &myBannerTexture);
         glBindTexture(GL_TEXTURE_2D, myBannerTexture);
 
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, bannerWidth, bannerHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
+             bannerWidth, bannerHeight, 0,
+             GL_RGB, GL_UNSIGNED_BYTE, data);
 
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+        glBindTexture(GL_TEXTURE_2D, 0);
 
         stbi_image_free(data);
     }
 
-
-    
     static bool enableAssistant   = true;
     static bool alwaysOnTop       = true;
     static bool showNotifications = true;
@@ -1486,7 +1312,7 @@ int main()
         s.Colors[ImGuiCol_TextDisabled]     = ImVec4(0.50f, 0.50f, 0.50f, 1.00f);
         ImGuiIO& io = ImGui::GetIO();
 
-        // FULLSCREEN BANNER WINDOW
+        // Fullscreen window
         ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
         ImGui::SetNextWindowSize(io.DisplaySize, ImGuiCond_Always);
 
@@ -1502,35 +1328,22 @@ int main()
             ImGuiWindowFlags_NoBackground
         );
 
-        // Window rectangle
-        ImVec2 p0 = ImGui::GetWindowPos();
-        ImVec2 p1 = ImVec2(p0.x + ImGui::GetWindowSize().x,
-                        p0.y + ImGui::GetWindowSize().y);
+        // Draw on top of everything
+        ImDrawList* draw = ImGui::GetForegroundDrawList();
 
-        // Draw list
-        ImDrawList* draw = ImGui::GetWindowDrawList();
-
-        // Clip to window
-        draw->PushClipRect(p0, p1, true);
+        ImVec2 p0 = ImVec2(0, 0);
+        ImVec2 p1 = io.DisplaySize;
 
         draw->AddImage(
-            (void*)(intptr_t)myBannerTexture,
+            (ImTextureID)(intptr_t)myBannerTexture,
             p0, p1,
             ImVec2(0, 0), ImVec2(1, 1),
-            IM_COL32(255, 255, 255, 0.3f * 255)
+            IM_COL32(255, 255, 255, 10)
         );
-
-        // Add black overlay (0.4 = 40% darkness)
-        draw->AddRectFilled(
-            p0, p1,
-            IM_COL32(0, 0, 0, (int)(0.4f * 255))
-        );
-
-
-        draw->PopClipRect();
 
         ImGui::End();
         ImGui::PopStyleVar();
+
 
         ImGui::SetNextWindowPos(ImVec2(20, 20), ImGuiCond_Always);
         ImGui::SetNextWindowSize(ImVec2(360, io.DisplaySize.y - 40), ImGuiCond_Always);
@@ -1841,7 +1654,6 @@ int main()
 
         
         DrawPerformanceTool(fontMedium, fontLarge);
-        CorspriteCharacterWidget(fontMedium, fontLarge);
         CorspriteBottomCarousel(fontMedium);
 
 
