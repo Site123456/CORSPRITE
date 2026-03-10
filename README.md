@@ -50,7 +50,7 @@ CORSPRITE aims to deliver a **local, fast, GPU‑accelerated assistant** with:
 
 - native system feel  
 - minimal latency  
-- full Unicode support  
+- full Unicode support (Copy right of [Noto fonts](https://github.com/notofonts/noto-fonts/blob/main/LICENSE))
 - customizable UI (min size: 620×700)  
 - multi‑language architecture  
 
