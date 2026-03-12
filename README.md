@@ -1,10 +1,7 @@
 <p align="center">
   <img src="/logo/logo_banner_beta.png" width="300" style="margin-right:20px;" />
-  <img src="/images/Showcaseof2026-03-07.png" width="400" />
 </p>
-<p align="center">
-  <strong>CORSPRITE</strong> — a <em>local-first interactive AI assistant</em> designed to feel native, responsive, and uniquely yours.
-</p>
+<img src="/images/Showcaseof2026-03-07.png" width="400" />
 Compatible with <b>Ollama api</b> or a <b>custom Corsprite engine</b> (custom engine is possible but not recommended until Beta) and compatible with most modern <b>text-based models</b>.<br>
   <strong>Current builds target Windows x64.</strong><br><br>
 <p align="center">
