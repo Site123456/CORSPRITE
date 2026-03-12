@@ -1,7 +1,8 @@
-# <p align="center"><img src="/logo/logo_banner_beta.png" width="480" /></p>
+<p align="center"><img src="/logo/logo_banner_beta.png" width="480" /></p>
 
 <p align="center">
-  <strong>A local‑first interactive assistant engineered to feel native, alive, and unmistakably yours.</strong><br>
+  <strong>CORSPRITE</strong> — a <em>local-first interactive AI assistant</em> designed to feel native, responsive, and uniquely yours.<br>
+  Powered by <b>Ollama</b> or a <b>custom Corsprite engine</b> (custom engine is possible but not recommended until Beta) and compatible with most modern <b>text-based models</b>.<br>
   <strong>Current builds target Windows x64.</strong>
 </p>
 
@@ -18,98 +19,95 @@
 
 ---
 
+## 🚀 Features at a Glance
+
+- **Local-first AI execution** — Keep all your data on your machine.  
+- **Ollama integration** — Works with most text-based models (recommended: deepseek-v3:671b or better).  
+- **GPU-accelerated rendering** — Smooth UI, minimal latency.  
+- **Full Unicode & multi-language support** — Used: [Noto Fonts](https://github.com/notofonts/noto-fonts).  
+- **Customizable interface** — Minimum window: 620×700 px.  
+- **Automatic audio device detection** — Voice input ready out-of-the-box.  
+- **Modular architecture** — Easy to extend or add custom scripts.  
+
+---
+
 ## 🖥 Supported Platforms
 
-**Tested**
-- Windows 11 (x64)
+| Status | Platform |
+|--------|---------|
+| ✅ Tested | Windows 11 (x64) |
+| ⚙️ Planned | Linux (x64), Windows (x86 / 32-bit) |
 
-**Planned**
-- Linux (x64)
-- Windows (x86 / 32‑bit)
-
-⚠️ Training datasets will **not** be distributed.  
-⚠️ Upload features remain disabled until security validation is complete.
+> ⚠️ Training datasets will **not** be distributed.  
+> ⚠️ Upload features remain disabled until security validation is complete.
 
 ---
 
-## 📘 Documentation
-
-- Installation: https://corsprite.com/  
-- Docs: https://docs.corsprite.com/  
-- Dev updates: https://www.youtube.com/@CORSPRITE
-
-**Built with**
-- [nlohmann/json](https://github.com/nlohmann/json)
-- [Dear ImGui](https://github.com/ocornut/imgui)
-
----
-
-## 🧠 Vision
-
-CORSPRITE aims to deliver a **local, fast, GPU‑accelerated assistant** with:
-
-- native system feel  
-- minimal latency  
-- full Unicode support (Copy right of [Noto fonts](https://github.com/notofonts/noto-fonts/blob/main/LICENSE))
-- customizable UI (min size: 620×700)  
-- multi‑language architecture  
-
----
-
-## 🧱 Architecture
+## 🧱 Architecture Overview
 
 | Layer | Language | Purpose |
 |-------|----------|---------|
 | UI Renderer | C++ | ImGui + GPU rendering |
-| Logic Layer | Python | AI interaction & scripting |
-| System Bridge | Rust | OS access + performance |
+| Logic Layer | Python | AI orchestration & scripting |
+| System Bridge | Rust | OS integration + performance |
+| AI Runtime | Ollama | Local model execution & inference |
+
+> Modular design: swap models, add scripts, or extend safely.
+
+---
+
+## 🧠 Usage
+
+CORSPRITE aims to provide a **native, fast, and personal AI assistant**:
+
+- ⚡ Minimal latency interaction  
+- 🖥 Native desktop feel  
+- 🔤 Full Unicode & multi-language support  
+- 🎛 Highly customizable UI  
+- 🌍 Compatible with most text models
+- 🔌 Local-first execution with privacy in mind  
 
 ---
 
 ## 🔧 Requirements
 
-Install before building:
+Before building, ensure you have:
 
 - Vulkan SDK  
 - GLFW  
-- MinGW‑w64 / GCC 11+ (MSVC planned)
+- Ollama (for local model execution)  
+- MinGW-w64 / GCC 11+ (MSVC support planned)
 
-Check compiler:
+Verify compiler:
 
 ```bash
 g++ --version
-```
+````
 
 ---
 
-## ⚙️ Installation
+## ⚙️ Installation Guide
 
-### 1. Clone the repository
+### 1. Clone Repository
 
 ```bash
 git clone https://github.com/Site123456/CORSPRITE.git
 cd CORSPRITE
 ```
 
----
-
-### 2. Build (recommended)
+### 2. Build (Recommended)
 
 ```bash
 make
 ```
 
-This produces:
+Produces:
 
-```
+```bash
 Corsprite_launcher.exe
 ```
 
----
-
-### 3. Manual build (advanced)
-
-If you prefer to compile manually without `make`, use the full command:
+### 3. Manual Build (Advanced)
 
 ```bash
 g++ -Wall -I. -Iinclude -Ibackends \
@@ -120,77 +118,75 @@ backends/imgui_impl_glfw.cpp backends/imgui_impl_opengl3.cpp \
 -o Corsprite_launcher.exe
 ```
 
-This command:
+* Compiles core ImGui sources
+* Includes GLFW + OpenGL3 backends
+* Links Windows system libraries
+* Produces `Corsprite_launcher.exe`
 
-- Compiles all core ImGui sources  
-- Includes GLFW + OpenGL3 backends  
-- Links required Windows system libraries  
-- Produces the final executable  
-
----
-
-### 4. Run the launcher
+### 4. Run Launcher
 
 ```bash
 Corsprite_launcher.exe
 ```
 
+> Make sure Ollama is running with at least one installed model:
+
+```bash
+ollama run llama3
+```
+
+---
+
+## 🔊 Automatic Audio Detection
+
+CORSPRITE automatically detects and configures audio devices:
+
+* Detects **microphones** at launch
+* Monitors **real-time device changes**
+* Switches to **active/highest-priority input**
+* Prevents audio dropouts
+* Future-ready for **noise profiling, gain control, and routing**
+
+**Internal workflow:**
+
+* **Rust bridge** → Low-latency device enumeration
+* **Python layer** → Voice activation & Ollama acces
+* **C++ UI** → Live feedback
+
 ---
 
 ## 🔐 Security & Updates
 
-Active work includes:
+Current improvements:
 
-- securing Python ↔ Rust communication  
-- fixing auto installation for python directly from c++
-- bridge connection between Rust & C++
-- Audio to Text
-- Corsprite VD
-- sandboxing external inputs  
-- validating assistant commands  
+* Secure Python ↔ Rust communication
+* Auto-install Python modules from C++
+* Bridge stability between Rust & C++
+* Audio-to-Text pipelines
+* Corsprite VD system
+* Sandboxing external inputs
+* Command validation
 
-Note: Python & Rust files will be uploaded only after fix
----
-
-## 🔊 Audio Auto‑Detection
-
-CORSPRITE includes an **automatic audio device detection system** designed to make voice interaction seamless and reliable across different hardware setups.
-
-### What the system does
-- Detects available **microphones** at launch  
-- Monitors **device changes** in real time  
-- Automatically switches to the **active / highest‑priority** input  
-- Prevents audio dropouts  
-- Ensures the assistant is always ready to listen  
-
-### How it works internally
-- Rust bridge for **low‑latency device enumeration**  
-- Python layer for **voice activation**  
-- C++ UI for **live visual feedback**  
-- Future‑ready for noise profiling, gain control, and routing  
-
-### Current status
-- Auto‑detection is **enabled in alpha builds**  
-- Manual device selection UI is in development  
-- Advanced audio processing (AEC, AGC, noise suppression) is planned for beta  
+> Python & Rust modules will be uploaded after stability fixes.
 
 ---
 
 ## 🤝 Contributing
 
-Contribution guidelines will arrive during **Beta**.  
-Bug reports: https://github.com/Site123456/CORSPRITE/issues
-Bug reports: https://issues.corsprite.com
+Guidelines will arrive during **Beta**.
+
+* Bug reports: [GitHub Issues](https://github.com/Site123456/CORSPRITE/issues)
+* Bug reports: [Official site](https://issues.corsprite.com)
 
 ---
 
 ## 📜 License
 
-To be finalized before public beta.
+Will be finalized before **public Beta**.
 
 ---
 
 ## ⚠️ Disclaimer
 
-CORSPRITE is **experimental alpha software**.  
+CORSPRITE is **experimental alpha software**.
 Expect crashes, incomplete features, and unstable APIs.
