@@ -1,7 +1,6 @@
 <p align="center">
   <img src="/logo/logo_banner_beta.png" width="300" style="margin-right:20px;" />
 </p>
-<img src="/images/Showcaseof2026-03-07.png" width="400" />
 Compatible with <b>Ollama api</b> or a <b>custom Corsprite engine</b> (custom engine is possible but not recommended until Beta) and compatible with most modern <b>text-based models</b>.<br>
   <strong>Current builds target Windows x64.</strong><br><br>
 <p align="center">
@@ -160,7 +159,17 @@ Current improvements:
 * Command validation
 
 > Python & Rust modules will be uploaded after stability fixes.
+---
 
+## Update log
+<p align="center">
+  <span style="display:inline-block; margin:10px;">
+    <img src="/images/Showcaseof2026-03-07.png" width="400" />
+  </span>
+  <span style="display:inline-block; margin:10px;">
+    <img src="/images/Showcaseof2026-03-12.png" width="400" />
+  </span>
+</p>
 ---
 
 ## 🤝 Contributing
